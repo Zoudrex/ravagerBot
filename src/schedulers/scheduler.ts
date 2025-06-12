@@ -9,8 +9,6 @@ class Scheduler {
     inviteStaller: CronJob | undefined;
     waShtReminder: CronJob;
 
-    // updateWAsReminder: CronJob;
-
     constructor() {
         this.inviteReminder = CronJob.from({
             cronTime: '0 20 19 * * 0,4',
@@ -70,7 +68,7 @@ class Scheduler {
             {
                 cronTime: nextRaid.plus(6000), // Delay it by an hour in case same stick funsies
                 onTick: function () {
-                    console.log('This should only happen once and fully stap the OG spam');
+                    console.log('This should only happen once and fully stop the OG spam');
                 },
                 start: true,
                 name: 'Next CRON time enabler'

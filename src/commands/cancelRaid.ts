@@ -1,9 +1,8 @@
 import {
     CommandInteraction,
     PermissionFlagsBits,
-    ChannelType,
     SlashCommandBuilder,
-    ButtonStyle, GuildMember,
+    GuildMember,
 } from 'discord.js';
 
 import botVars from "../bot";
