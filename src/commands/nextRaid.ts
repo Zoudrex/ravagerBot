@@ -7,7 +7,7 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: CommandInteraction) {
     const nextRaidDate = determineNextRaid();
-    await interaction.reply(`The next raid will be on: ${nextRaidDate}`);
+    await interaction.reply(`The next raid will be on the ${nextRaidDate}`);
 }
 
 function determineNextRaid() {
