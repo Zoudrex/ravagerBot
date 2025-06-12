@@ -29,10 +29,11 @@ export async function execute(interaction: CommandInteraction) {
     if (!interaction.guild || intersection.size === 0) {
         return interaction.reply(`You're not allowed to do this.`);
     }
-    console.log('Going to cancel');
 
     const nightCount = interaction.options.getInteger('nightcount') ?? 1;
     const skipMessage = interaction.options.getBoolean('skipmessage') ?? false;
+
+    console.log(`Going to cancel ${nightCount} nights`);
     await botVars.scheduler.skipNext(+nightCount, skipMessage);
     const content = skipMessage ? 'All good, skipped the next raid' : 'All good, skipped the next raid and posted a message';
     await interaction.reply({content, ephemeral: true});
