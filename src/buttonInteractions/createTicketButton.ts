@@ -115,7 +115,7 @@ function formatTicketName(displayName: string): string {
 }
 
 async function findCategory(channelManager: GuildChannelManager): Promise<CategoryChannel> {
-    const categoryName = 'Tickets';
+    const categoryName = 'ꓔickets';
     let category = channelManager.cache
         .filter(val => val.name === categoryName && val.type === ChannelType.GuildCategory)
         .first() as CategoryChannel

@@ -31,14 +31,14 @@ export async function execute(interaction: CommandInteraction) {
     try {
         // Re-deploy, mostly for dev testing, cba deleting the channel manually each time
         interaction.guild.channels.cache.each(val => {
-            if (val.name === 'Tickets' && val.type === ChannelType.GuildText) {
+            if (val.name === 'ꓔickets' && val.type === ChannelType.GuildText) {
                 val.delete();
             }
             return false;
         })
 
         const channel = await interaction.guild.channels.create({
-            name: 'Tickets',
+            name: 'ꓔickets',
             type: ChannelType.GuildText,
             permissionOverwrites: [{
                 id: interaction.guild.id,
