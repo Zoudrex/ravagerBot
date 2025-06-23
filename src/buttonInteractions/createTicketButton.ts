@@ -14,7 +14,7 @@ export async function execute(interaction: ButtonInteraction, additionalRoles: s
         return interaction.reply('How...?');
     }
 
-    const rolesToFind = ["TicketOfficer", ...additionalRoles];
+    const rolesToFind = ["Officer", ...additionalRoles];
     const roles: Role[] = [];
 
     const channelManager = interaction.guild.channels
@@ -115,7 +115,7 @@ function formatTicketName(displayName: string): string {
 }
 
 async function findCategory(channelManager: GuildChannelManager): Promise<CategoryChannel> {
-    const categoryName = 'ꓔickets';
+    const categoryName = 'Tickets';
     let category = channelManager.cache
         .filter(val => val.name === categoryName && val.type === ChannelType.GuildCategory)
         .first() as CategoryChannel
