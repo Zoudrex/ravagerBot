@@ -50,9 +50,6 @@ async function refreshBotCommands() {
     for (const guild of client.guilds.cache) {
         await deployCommands({guildId: guild[0]});
     }
-    // client.guilds.cache.forEach(guild => {
-    //     await deployCommands(guild.id);
-    // })
 }
 let botVars = {client: client, scheduler: scheduler};
 export default botVars

@@ -51,13 +51,13 @@ export async function execute(interaction: CommandInteraction) {
 
         const createTicketButton = new ButtonBuilder()
             .setCustomId('createTicket')
-            .setLabel('General 💌')
+            .setLabel('Create a ticket 💌')
             .setStyle(ButtonStyle.Secondary);
-
-        const createRaidTicketButton = new ButtonBuilder()
-            .setCustomId('createRaidTicket')
-            .setLabel('Raid ⚔')
-            .setStyle(ButtonStyle.Secondary);
+        //
+        // const createRaidTicketButton = new ButtonBuilder()
+        //     .setCustomId('createRaidTicket')
+        //     .setLabel('Raid ⚔')
+        //     .setStyle(ButtonStyle.Secondary);
 
         await channel.send(
             {
@@ -69,8 +69,8 @@ export async function execute(interaction: CommandInteraction) {
                     {
                         "type": 1,
                         "components": [
-                            createTicketButton.toJSON(),
-                            createRaidTicketButton.toJSON()
+                            createTicketButton.toJSON()
+                            // createRaidTicketButton.toJSON()
                         ]
                     }
                 ]

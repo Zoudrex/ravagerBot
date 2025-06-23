@@ -6,6 +6,6 @@ export const buttonInteractions = {
 };
 
 export const buttonInteractionIds = [
-    "createTicket",
-    "createRaidTicket"
+    "createTicket"
+    // "createRaidTicket"
 ];
