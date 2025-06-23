@@ -2,7 +2,6 @@ import {CronJob} from 'cron';
 import findChannel from "../helpers/findChannel";
 import {config} from "../config";
 import {findGuildRole} from "../helpers/findRole";
-import determineNextRaid from "../helpers/dateFormatter";
 
 class Scheduler {
     jobs: CronJob[] = [];
@@ -41,14 +40,14 @@ class Scheduler {
         this.inviteReminder.stop();
         this.waShtReminder.stop();
         const nextRaid = dates[dates.length - 1];
-        const raidInfo = determineNextRaid();
+        const date = `${nextRaid.get("day")}-${nextRaid.monthShort}`;
 
         if (!skipMessage) {
             const raidCancelled = CronJob.from(
                 {
                     cronTime: '* * * * * *',
                     onTick: function () {
-                        Scheduler.sendRaidReminder(`Sadly, raid has been cancelled. See y'all at ${raidInfo.date}`)
+                        Scheduler.sendRaidReminder(`Sadly, raid has been cancelled. See y'all at ${date}`)
                     },
                     onComplete: null,
                     start: false,
