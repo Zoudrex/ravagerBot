@@ -40,7 +40,7 @@ class Scheduler {
         this.inviteReminder.stop();
         this.waShtReminder.stop();
         const nextRaid = dates[dates.length - 1];
-        const date = `${nextRaid.monthShort} - ${nextRaid.get("day")}`;
+        const date = `${nextRaid.monthShort} ${nextRaid.get("day")}`;
 
         if (!skipMessage) {
             const raidCancelled = CronJob.from(
