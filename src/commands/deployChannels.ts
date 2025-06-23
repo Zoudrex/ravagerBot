@@ -61,7 +61,7 @@ export async function execute(interaction: CommandInteraction) {
 
         await channel.send(
             {
-                content: '#### 🎟️ Got Questions? Need Help? 🎟️ \n' +
+                content: '🎟️ Got Questions? Need Help? 🎟️ \n' +
                     '\n' +
                     'Hey there! 👋 \nIf you have any questions or need assistance, don\'t hesitate to reach out! \n\n',
                 components: [
