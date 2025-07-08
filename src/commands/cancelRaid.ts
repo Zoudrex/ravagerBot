@@ -30,7 +30,9 @@ export async function execute(interaction: CommandInteraction) {
         return interaction.reply(`You're not allowed to do this.`);
     }
 
+    // @ts-ignore
     const nightCount = interaction.options.getInteger('nightcount') ?? 1;
+    // @ts-ignore
     const skipMessage = interaction.options.getBoolean('skipmessage') ?? false;
 
     console.log(`Going to cancel ${nightCount} nights`);

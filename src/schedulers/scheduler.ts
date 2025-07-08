@@ -20,11 +20,10 @@ class Scheduler {
             name: 'Raid invites'
         });
 
-        // 0 40 17 * * 0,4
         this.waShtReminder = CronJob.from({
             cronTime: '0 20 17 * * 0,4',
             onTick: function () {
-                Scheduler.sendRaidReminder('Make sure to submit your sim to Wowaudit and update your weakauras before raid!')
+                Scheduler.sendRaidReminder('Make sure to check and update your WeakAuras before raid!')
             },
             onComplete: null,
             start: false,
