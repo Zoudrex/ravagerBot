@@ -11,7 +11,7 @@ class Scheduler {
 
     constructor() {
         this.inviteReminder = CronJob.from({
-            cronTime: '0 20 19 * * 0,4',
+            cronTime: '0 20 19 * * 4',
             onTick: function () {
                 Scheduler.sendRaidReminder('Raid invites will be going out in 20 minutes!')
             },
@@ -21,7 +21,7 @@ class Scheduler {
         });
 
         this.waShtReminder = CronJob.from({
-            cronTime: '0 20 17 * * 0,4',
+            cronTime: '0 20 17 * * 4',
             onTick: function () {
                 Scheduler.sendRaidReminder('Make sure to check and update your WeakAuras before raid!')
             },
