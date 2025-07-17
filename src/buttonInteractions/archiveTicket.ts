@@ -81,8 +81,8 @@ async function deleteOldestTicket(tickets: Collection<string, CategoryChildChann
 }
 
 function parseDateFromTicket(ticket: string): Date {
-    // Match the last part of the string: {month}-{day}-{hour}h{minute}m
-    const regex = /([a-z]{3,4})-(\d{1,2})-(\d{1,2})h(\d{1,2})m$/i;
+    // Match the last part of the string: {month}-{day}-{hour}h?{minute}m?
+    const regex = /([a-z]{3,4})-(\d{1,2})-(\d{1,2})h?(\d{1,2})m?$/i;
     const match = ticket.match(regex);
 
     if (!match) throw Error(`no match found, shouldn't happen, trying to match ${ticket}`);
