@@ -74,7 +74,6 @@ async function deleteOldestTicket(tickets: Collection<string, CategoryChildChann
             id: ticket,
             date: parseDateFromTicket(ticket.name)
         })
-        console.log(parsedTickets);
     })
 
     parsedTickets.sort((ticket1, ticket2) => ticket1.date.getTime() - ticket2.date.getTime());
@@ -86,7 +85,7 @@ function parseDateFromTicket(ticket: string): Date {
     const regex = /([a-z]{3,4})-(\d{1,2})-(\d{1,2})h(\d{1,2})m$/i;
     const match = ticket.match(regex);
 
-    if (!match) throw Error("no match found, shouldn't happen");
+    if (!match) throw Error(`no match found, shouldn't happen, trying to match ${ticket}`);
 
     const [, monthStr, dayStr, hourStr, minuteStr] = match;
     const month = monthMap[monthStr.toLowerCase()];
@@ -96,6 +95,5 @@ function parseDateFromTicket(ticket: string): Date {
     const minute = parseInt(minuteStr, 10);
 
     const year = new Date().getFullYear(); // Or use a different strategy
-    console.log(year, month, day, hour, minute);
     return new Date(year, month, day, hour, minute);
 }
