@@ -1,5 +1,5 @@
 import botVars from "../bot";
-import {TextChannel} from "discord.js";
+import {CategoryChannel, ChannelType, TextChannel} from "discord.js";
 
 /**
  * Finds a channel within the specified guild (based on guildId) based on their name.
@@ -17,6 +17,20 @@ export default function findChannel(channelName: string, guildId: string) {
     return (botVars.client
         .channels
         .cache
-        .filter(channel => channel.type === 0 && channel.guildId === guildId && channel.name === channelName)
+        .filter(channel => channel.type === ChannelType.GuildText && channel.guildId === guildId && channel.name === channelName)
         .first() as TextChannel) ?? false;
+}
+
+export function findChannelsOfCategory(categoryName: string, guildId: string) {
+    // Ain't nobody got time for that.
+    if (categoryName === '' || guildId === '') {
+        return false;
+    }
+
+    let category = botVars.client.channels.cache.find(channel => channel.type === ChannelType.GuildCategory && channel.name === categoryName);
+    if (!category) {
+        return false;
+    }
+    category = category as CategoryChannel;
+    return category.children.cache;
 }

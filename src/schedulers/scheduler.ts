@@ -1,7 +1,11 @@
 import {CronJob} from 'cron';
-import findChannel from "../helpers/findChannel";
+import findChannel, {findChannelsOfCategory} from "../helpers/findChannel";
 import {config} from "../config";
 import {findGuildRole} from "../helpers/findRole";
+import botVars from "../bot";
+import {TextChannel} from "discord.js";
+import {findApplicant} from "../commands/applicants/handleApplicant";
+
 
 class Scheduler {
     jobs: CronJob[] = [];
@@ -30,9 +34,9 @@ class Scheduler {
         });
 
         this.applicantCleanup = CronJob.from({
-            cronTime: '0 0 * * * *',
+            cronTime: '* * * * * *',
             onTick: function () {
-                console.log('O hi');
+                Scheduler.deleteStaleApplicants()
             },
             name: 'Clean up applicants',
             start: false,
@@ -112,6 +116,31 @@ class Scheduler {
         const role = findGuildRole(config.SERVER_ID ?? '', 'Raiders');
 
         channel.send(`${role} ${message}`);
+    }
+
+    private static deleteStaleApplicants() {
+        const channels = findChannelsOfCategory('ꓮpplicants', config.SERVER_ID ?? '')
+        if (!channels) {
+            return;
+        }
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        channels.each(channel => {
+            channel = channel as TextChannel
+            channel.messages.fetch().then(() => {
+                if (channel.lastMessage?.createdAt && channel.lastMessage.createdAt < date) {
+                    findApplicant(channel).then(applicant => {
+                        let role = channel.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME)
+                        if (!applicant || !role) {
+                            return;
+                        }
+                        applicant.roles.remove(role);
+                        channel.delete("Stale ticket");
+                    })
+                }
+            });
+            // console.log(channel.lastMessage?.createdAt);
+        })
     }
 }
 

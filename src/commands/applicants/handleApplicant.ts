@@ -35,7 +35,7 @@ export async function execute(interaction: CommandInteraction) {
     }
 }
 
-async function findApplicant(channel: TextChannel) {
+export async function findApplicant(channel: TextChannel) {
     const memberOverwrite = channel.permissionOverwrites.cache.find(
         (overwrite) => overwrite.type === OverwriteType.Member
     );
