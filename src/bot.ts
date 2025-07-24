@@ -6,7 +6,7 @@ import {buttonInteractions} from "./buttonInteractions";
 import Scheduler from "./schedulers/scheduler";
 
 const client = new Client({
-    intents: ["Guilds", "GuildMessages", "DirectMessages"],
+    intents: ["Guilds", "GuildMessages", "DirectMessages", "GuildMembers"],
 });
 
 const scheduler = new Scheduler();
@@ -44,6 +44,32 @@ client.on('interactionCreate', async interaction => {
         }
     }
 });
+
+client.on("guildMemberAdd", async (member) => {
+    if(!config.SERVER_UFG_ID || !config.SERVER_RVG_ID) {
+        return;
+    }
+    if(member.guild.id === config.SERVER_UFG_ID) {
+        return;
+    }
+
+    const ufg = client.guilds.cache.get(config.SERVER_UFG_ID);
+    const rvg = client.guilds.cache.get(config.SERVER_RVG_ID);
+
+    if (!ufg || !rvg) {
+        console.log("Couldn't find the required servers");
+        return;
+    }
+
+    let ufgMember = await ufg.members.fetch(member.id);
+    let hasRole = ufgMember?.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
+    let rvgRaiderRole = rvg.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
+    if(!hasRole || !rvgRaiderRole) {
+        console.log("Couldn't find the required roles");
+        return;
+    }
+    await member.roles.add(rvgRaiderRole);
+})
 
 client.login(config.DISCORD_TOKEN);
 async function refreshBotCommands() {
