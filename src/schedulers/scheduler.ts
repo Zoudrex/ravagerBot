@@ -8,6 +8,7 @@ class Scheduler {
     inviteReminder: CronJob;
     inviteStaller: CronJob | undefined;
     waShtReminder: CronJob;
+    applicantCleanup: CronJob;
 
     constructor() {
         this.inviteReminder = CronJob.from({
@@ -15,7 +16,6 @@ class Scheduler {
             onTick: function () {
                 Scheduler.sendRaidReminder('Raid invites will be going out in 20 minutes!')
             },
-            onComplete: null,
             start: false,
             name: 'Raid invites'
         });
@@ -25,13 +25,22 @@ class Scheduler {
             onTick: function () {
                 Scheduler.sendRaidReminder('Make sure to check and update your WeakAuras before raid!')
             },
-            onComplete: null,
             start: false,
             name: 'Update your shit'
         });
 
+        this.applicantCleanup = CronJob.from({
+            cronTime: '0 0 * * * *',
+            onTick: function () {
+                console.log('O hi');
+            },
+            name: 'Clean up applicants',
+            start: false,
+        })
+
         this.jobs.push(this.inviteReminder);
         this.jobs.push(this.waShtReminder);
+        this.jobs.push(this.applicantCleanup);
     }
 
     async skipNext(nights: number = 1, skipMessage: boolean) {

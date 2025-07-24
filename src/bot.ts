@@ -32,24 +32,22 @@ client.on('interactionCreate', async interaction => {
         // Handle button interactions
         const buttonInteraction = interaction as ButtonInteraction;
         let customId = buttonInteraction.customId
-        const additionalRoles: string[] = [];
 
-        if(buttonInteraction.customId === "createRaidTicket") {
+        if (buttonInteraction.customId === "createApplyTicket") {
             customId = "createTicket";
-            additionalRoles.push("Raid Assist")
         }
 
         if (buttonInteractions[customId as keyof typeof buttonInteractions]) {
-            await buttonInteractions[customId as keyof typeof buttonInteractions].execute(buttonInteraction, additionalRoles);
+            await buttonInteractions[customId as keyof typeof buttonInteractions].execute(buttonInteraction);
         }
     }
 });
 
 client.on("guildMemberAdd", async (member) => {
-    if(!config.SERVER_UFG_ID || !config.SERVER_RVG_ID) {
+    if (!config.SERVER_UFG_ID || !config.SERVER_RVG_ID) {
         return;
     }
-    if(member.guild.id === config.SERVER_UFG_ID) {
+    if (member.guild.id === config.SERVER_UFG_ID) {
         return;
     }
 
@@ -61,10 +59,24 @@ client.on("guildMemberAdd", async (member) => {
         return;
     }
 
-    let ufgMember = await ufg.members.fetch(member.id);
+    await ufg.members.fetch();
+    let ufgMember = ufg.members.cache.get(member.id);
     let hasRole = ufgMember?.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
     let rvgRaiderRole = rvg.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
-    if(!hasRole || !rvgRaiderRole) {
+    let rvgApplicantRole = rvg.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
+
+    if (!rvgApplicantRole) {
+        console.log('Applicant role doesnt exist');
+        return;
+    }
+
+    if (!ufgMember || !hasRole) {
+        await member.roles.add(rvgApplicantRole);
+        return;
+    }
+
+
+    if (!hasRole || !rvgRaiderRole) {
         console.log("Couldn't find the required roles");
         return;
     }
@@ -72,10 +84,12 @@ client.on("guildMemberAdd", async (member) => {
 })
 
 client.login(config.DISCORD_TOKEN);
+
 async function refreshBotCommands() {
     for (const guild of client.guilds.cache) {
         await deployCommands({guildId: guild[0]});
     }
 }
+
 let botVars = {client: client, scheduler: scheduler};
 export default botVars

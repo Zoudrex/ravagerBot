@@ -11,8 +11,9 @@ import {
     ChannelType,
     SlashCommandBuilder,
     ButtonBuilder,
-    ButtonStyle, GuildMember,
+    ButtonStyle, GuildMember, Interaction, Role,
 } from 'discord.js';
+import {config} from "../config";
 
 export const data = new SlashCommandBuilder()
     .setName('deploy')
@@ -34,10 +35,12 @@ export async function execute(interaction: CommandInteraction) {
             if (val.name === 'ꓔickets' && val.type === ChannelType.GuildText) {
                 val.delete();
             }
-            return false;
+            if (val.name === 'ꓮpply' && val.type === ChannelType.GuildText) {
+                val.delete();
+            }
         })
 
-        const channel = await interaction.guild.channels.create({
+        const channelGeneral = await interaction.guild.channels.create({
             name: 'ꓔickets',
             type: ChannelType.GuildText,
             permissionOverwrites: [{
@@ -49,17 +52,18 @@ export async function execute(interaction: CommandInteraction) {
             }]
         }) as TextChannel;
 
+        const applicantRole = interaction.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
+        if (applicantRole) {
+            await createApplicantChannel(interaction);
+        }
+
+
         const createTicketButton = new ButtonBuilder()
             .setCustomId('createTicket')
             .setLabel('Create a ticket 💌')
             .setStyle(ButtonStyle.Secondary);
-        //
-        // const createRaidTicketButton = new ButtonBuilder()
-        //     .setCustomId('createRaidTicket')
-        //     .setLabel('Raid ⚔')
-        //     .setStyle(ButtonStyle.Secondary);
 
-        await channel.send(
+        await channelGeneral.send(
             {
                 content: '🎟️ Got Questions? Need Help? 🎟️ \n' +
                     '\n' +
@@ -69,14 +73,13 @@ export async function execute(interaction: CommandInteraction) {
                         "type": 1,
                         "components": [
                             createTicketButton.toJSON()
-                            // createRaidTicketButton.toJSON()
                         ]
                     }
                 ]
             }
         );
 
-        return interaction.reply({content: `Ticket channel created: ${channel}`, ephemeral: true});
+        return interaction.reply({content: `Ticket channel created`, ephemeral: true});
     } catch (error) {
         console.error('Error creating channel:', error);
         return interaction.reply({
@@ -84,4 +87,46 @@ export async function execute(interaction: CommandInteraction) {
             ephemeral: true
         });
     }
+}
+
+async function createApplicantChannel(interaction: CommandInteraction) {
+    const applicantRole = interaction.guild?.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
+    if (!applicantRole) {
+        console.log('Applicant role does not exist');
+        return;
+    }
+
+    const channelApply = await interaction.guild?.channels.create({
+        name: 'ꓮpply',
+        type: ChannelType.GuildText,
+        permissionOverwrites: [{
+            id: interaction.guild.id,
+            deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ViewChannel]
+        }, {
+            id: interaction.client.user?.id,
+            allow: PermissionFlagsBits.SendMessages
+        }, {
+            id: applicantRole.id,
+            allow: PermissionFlagsBits.ViewChannel
+        }]
+    }) as TextChannel;
+
+    const createApplyButton = new ButtonBuilder()
+        .setCustomId('createApplyTicket')
+        .setLabel('Apply!')
+        .setStyle(ButtonStyle.Secondary);
+
+    await channelApply.send(
+        {
+            content: 'We good?',
+            components: [
+                {
+                    "type": 1,
+                    "components": [
+                        createApplyButton.toJSON()
+                    ]
+                }
+            ]
+        }
+    )
 }

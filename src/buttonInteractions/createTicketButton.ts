@@ -9,19 +9,25 @@ import {
 } from "discord.js";
 import {findRole} from "../helpers/findRole";
 
-export async function execute(interaction: ButtonInteraction, additionalRoles: string[]) {
+export async function execute(interaction: ButtonInteraction) {
     if (!interaction.guild) {
         return interaction.reply('How...?');
     }
 
-    const rolesToFind = ["Officer", ...additionalRoles];
+    console.log(interaction.customId);
+
+    const rolesToFind = interaction.customId === 'createApplyTicket' ? ["Recruitment"] : ["Officer"];
     const roles: Role[] = [];
 
+    const channelPrefix = interaction.customId === "createApplyTicket" ? 'applicant' : 'ticket';
+    const categoryName = interaction.customId === "createApplyTicket" ? 'ꓮpplicants' : 'Tickets';
+
     const channelManager = interaction.guild.channels
-    const category = await findCategory(channelManager)
+    const category = await findCategory(channelManager, categoryName)
 
     const member = interaction.member as GuildMember
-    const ticketName = formatTicketName(member.displayName);
+
+    const ticketName = formatTicketName(member.displayName, channelPrefix);
 
     let channelExist = channelManager.cache.filter(channel => channel.name === ticketName).first();
     if (channelExist) {
@@ -61,7 +67,8 @@ export async function execute(interaction: ButtonInteraction, additionalRoles: s
         permissionOverwrites: permissions
     })
 
-    await addArchiveButton(channel, roles);
+
+    await addArchiveButton(channel, roles, interaction.customId !== "createApplyTicket");
     await sendAutoDeleteEphemeral(interaction, {
         content: `Your ticket has been created. ${channel}`,
         ephemeral: true
@@ -81,7 +88,7 @@ async function sendAutoDeleteEphemeral(interaction: ButtonInteraction, options: 
     }, delay);
 }
 
-async function addArchiveButton(channel: TextChannel, roles: Role[]): Promise<void> {
+async function addArchiveButton(channel: TextChannel, roles: Role[], includeButton: boolean): Promise<void> {
     const createTicketButton = new ButtonBuilder()
         .setCustomId('archiveTicket')
         .setLabel('Close ticket ✅')
@@ -93,14 +100,12 @@ async function addArchiveButton(channel: TextChannel, roles: Role[]): Promise<vo
         }
         roleTxt += roles[i].toString();
     }
-
-    await channel.send({
-        content: `${roleTxt}\n\nHeya, let us know what is on your mind. \nOne of us will be with you soon\n\u200B`,
-        components: [{"type": 1, "components": [createTicketButton.toJSON()]}]
-    });
+    const content = includeButton ? `${roleTxt}\n\nHeya, let us know what is on your mind. \nOne of us will be with you soon\n\u200B` : `${roleTxt}\n\nHubba hubba applicant`;
+    const components = includeButton ? [{"type": 1, "components": [createTicketButton.toJSON()]}] : [];
+    await channel.send({content, components});
 }
 
-function formatTicketName(displayName: string): string {
+function formatTicketName(displayName: string, channelPrefix: string): string {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
     const date = new Date();
@@ -111,11 +116,10 @@ function formatTicketName(displayName: string): string {
         minutes = '00'
     }
 
-    return `ticket-${displayName}-${months[date.getMonth()]}-${dayNumber}-${date.getHours()}H${minutes}M`.toLowerCase()
+    return `${channelPrefix}-${displayName}-${months[date.getMonth()]}-${dayNumber}-${date.getHours()}H${minutes}M`.toLowerCase()
 }
 
-async function findCategory(channelManager: GuildChannelManager): Promise<CategoryChannel> {
-    const categoryName = 'Tickets';
+async function findCategory(channelManager: GuildChannelManager, categoryName: string): Promise<CategoryChannel> {
     let category = channelManager.cache
         .filter(val => val.name === categoryName && val.type === ChannelType.GuildCategory)
         .first() as CategoryChannel
