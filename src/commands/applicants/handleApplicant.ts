@@ -54,6 +54,7 @@ async function handleApplicant(interaction: CommandInteraction) {
     // Find the applicant for the channel the interaction happened in
     const applicant = await findApplicant(channel);
     if (!applicant) {
+        console.log("Couldn't find applicant");
         await interaction.reply({content: "done", ephemeral: true});
         await channel.delete("Applicant no longer exists");
         return true;
@@ -64,11 +65,14 @@ async function handleApplicant(interaction: CommandInteraction) {
     await interaction.guild?.roles.fetch()
     const raiderRole = interaction.guild?.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
     const applicantRole = interaction.guild?.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME) as Role;
+    console.log("Removing applicant");
     applicant.roles.remove(applicantRole);
     if (accepted && raiderRole) {
+        console.log("Assigning raider");
         applicant.roles.add(raiderRole);
     }
 
+    console.log("All done, deleting channel");
     await interaction.reply({content: "done", ephemeral: true});
     await channel.delete("Applicant no longer exists");
     return true;

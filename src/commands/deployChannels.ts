@@ -113,12 +113,32 @@ async function createApplicantChannel(interaction: CommandInteraction) {
 
     const createApplyButton = new ButtonBuilder()
         .setCustomId('createApplyTicket')
-        .setLabel('Apply!')
-        .setStyle(ButtonStyle.Secondary);
+        .setLabel('Apply now')
+        .setStyle(ButtonStyle.Success);
 
-    await channelApply.send(
+
+    const msg = await channelApply.send(
         {
-            content: 'We good?',
+            content: "Welcome to RAVAGE Gaming's Discord. \n" +
+                "\n" +
+                "We are a CE WoW guild based on the Draenor Server\n" +
+                "\n" +
+                "Raid Days: Thursday & Sunday 20:00 - 23:00 Servertime (We raid Monday 20:00 - 23:00ST for the first 4 weeks of the tier) \n" +
+                "\n" +
+                "After CE we aim to keep raid days down to just Thursday 20:00 - 23:00 \n" +
+                "\n" +
+                "Aberrus: 9/9 M - Rank: 904\n" +
+                "Amirdrassil: 9/9M - Rank: 770\n" +
+                "Nerub-ar Palace 8/8M -  Rank: 596\n" +
+                "Liberation of the Undermined 8/8M -  Rank: 753\n" +
+                "\n" +
+                "You can find us on: \n" +
+                "[Raider.io](https://raider.io/guilds/eu/draenor/RAVAGE)\n" +
+                "[WarcraftLogs](https://www.warcraftlogs.com/guild/id/789457)\n" +
+                "[WoWProgress](https://www.wowprogress.com/guild/eu/draenor/RAVAGE)\n" +
+                "\n" +
+                "If interested in applying to the guild or connecting with our recruitment officers please click the apply button below!\n\n\n\n" +
+                " ",
             components: [
                 {
                     "type": 1,
@@ -129,4 +149,5 @@ async function createApplicantChannel(interaction: CommandInteraction) {
             ]
         }
     )
+    await msg.suppressEmbeds(true);
 }
