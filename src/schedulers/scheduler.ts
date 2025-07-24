@@ -2,7 +2,6 @@ import {CronJob} from 'cron';
 import findChannel, {findChannelsOfCategory} from "../helpers/findChannel";
 import {config} from "../config";
 import {findGuildRole} from "../helpers/findRole";
-import botVars from "../bot";
 import {TextChannel} from "discord.js";
 import {findApplicant} from "../commands/applicants/handleApplicant";
 
@@ -139,7 +138,6 @@ class Scheduler {
                     })
                 }
             });
-            // console.log(channel.lastMessage?.createdAt);
         })
     }
 }
