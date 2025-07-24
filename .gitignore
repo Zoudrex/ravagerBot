@@ -284,4 +284,4 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,node,windows
 
-./src/commands/floodArchive.ts
+src/commands/floodArchive.ts
