@@ -24,7 +24,7 @@ class Scheduler {
         });
 
         this.waShtReminder = CronJob.from({
-            cronTime: '0 20 17 * * 4',
+            cronTime: '0 20 17 * * 0,1,4',
             onTick: function () {
                 Scheduler.sendRaidReminder('Make sure to check and update your WeakAuras before raid!')
             },
@@ -41,8 +41,8 @@ class Scheduler {
             start: false,
         })
 
-        this.jobs.push(this.inviteReminder);
-        this.jobs.push(this.waShtReminder);
+        // this.jobs.push(this.inviteReminder);
+        // this.jobs.push(this.waShtReminder);
         this.jobs.push(this.applicantCleanup);
     }
 
