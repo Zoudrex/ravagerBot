@@ -33,7 +33,7 @@ class Scheduler {
         });
 
         this.applicantCleanup = CronJob.from({
-            cronTime: '* * * * * *',
+            cronTime: '0 0 * * *',
             onTick: function () {
                 Scheduler.deleteStaleApplicants()
             },
