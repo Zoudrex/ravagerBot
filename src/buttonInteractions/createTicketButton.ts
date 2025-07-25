@@ -100,7 +100,10 @@ async function addArchiveButton(channel: TextChannel, roles: Role[], includeButt
         }
         roleTxt += roles[i].toString();
     }
-    const content = includeButton ? `${roleTxt}\n\nHeya, let us know what is on your mind. \nOne of us will be with you soon\n\u200B` : `${roleTxt}\n\nHubba hubba applicant`;
+
+    const content = includeButton ? `${roleTxt}\n\nHeya, let us know what is on your mind. \nOne of us will be with you soon\n\u200B` :
+        `${roleTxt}\n\nThank you for applying to RAVAGE. Please introduce yourself (Main Class/Spec), detail your raiding experience and provide any relevant logs below + any additional info you think is relevant! 
+        An officer will respond to your application within 24 hours!`;
     const components = includeButton ? [{"type": 1, "components": [createTicketButton.toJSON()]}] : [];
     await channel.send({content, components});
 }
