@@ -33,7 +33,7 @@ class Scheduler {
         });
 
         this.applicantCleanup = CronJob.from({
-            cronTime: '0 0 * * *',
+            cronTime: '0 0 0 * * *',
             onTick: function () {
                 Scheduler.deleteStaleApplicants()
             },
@@ -41,8 +41,8 @@ class Scheduler {
             start: false,
         })
 
-        // this.jobs.push(this.inviteReminder);
-        // this.jobs.push(this.waShtReminder);
+        this.jobs.push(this.inviteReminder);
+        this.jobs.push(this.waShtReminder);
         this.jobs.push(this.applicantCleanup);
     }
 
@@ -127,7 +127,9 @@ class Scheduler {
         channels.each(channel => {
             channel = channel as TextChannel
             channel.messages.fetch().then(() => {
+                console.log('Messages fetched')
                 if (channel.lastMessage?.createdAt && channel.lastMessage.createdAt < date) {
+                    console.log('Found stale message')
                     findApplicant(channel).then(applicant => {
                         let role = channel.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME)
                         if (!applicant || !role) {
@@ -135,6 +137,7 @@ class Scheduler {
                         }
                         applicant.roles.remove(role);
                         channel.delete("Stale ticket");
+                        console.log('Deleted stale ticket')
                     })
                 }
             });

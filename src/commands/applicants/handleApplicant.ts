@@ -66,10 +66,14 @@ async function handleApplicant(interaction: CommandInteraction) {
     const raiderRole = interaction.guild?.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
     const applicantRole = interaction.guild?.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME) as Role;
     console.log("Removing applicant");
-    applicant.roles.remove(applicantRole);
+    await applicant.roles.remove(applicantRole);
     if (accepted && raiderRole) {
         console.log("Assigning raider");
-        applicant.roles.add(raiderRole);
+        await applicant.roles.add(raiderRole);
+    }
+
+    if (!accepted) {
+        await applicant.kick("Sorry, your application has been denied");
     }
 
     console.log("All done, deleting channel");
