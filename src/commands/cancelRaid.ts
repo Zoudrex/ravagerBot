@@ -2,7 +2,7 @@ import {
     CommandInteraction,
     PermissionFlagsBits,
     SlashCommandBuilder,
-    GuildMember,
+    GuildMember, ChatInputCommandInteraction,
 } from 'discord.js';
 
 import botVars from "../bot";
@@ -22,7 +22,7 @@ export const data = new SlashCommandBuilder()
             .setDescription('Should the raid cancelled message be skipped | Default: false')
     );
 
-export async function execute(interaction: CommandInteraction) {
+export async function execute(interaction: ChatInputCommandInteraction) {
     const member = interaction.member as GuildMember;
     const allowedRoles = ['GM', 'Assistant GM', 'Officer', 'Officers'];
     const intersection = member.roles.cache.filter(role => allowedRoles.includes(role.name));
@@ -30,9 +30,7 @@ export async function execute(interaction: CommandInteraction) {
         return interaction.reply(`You're not allowed to do this.`);
     }
 
-    // @ts-ignore
     const nightCount = interaction.options.getInteger('nightcount') ?? 1;
-    // @ts-ignore
     const skipMessage = interaction.options.getBoolean('skipmessage') ?? false;
 
     console.log(`Going to cancel ${nightCount} nights`);

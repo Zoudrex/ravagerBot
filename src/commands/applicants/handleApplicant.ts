@@ -1,10 +1,11 @@
 import {
-    CommandInteraction,
     GuildMember,
     PermissionFlagsBits,
     SlashCommandBuilder,
     TextChannel,
-    OverwriteType, Guild, Role, ChatInputCommandInteraction
+    OverwriteType,
+    Role,
+    ChatInputCommandInteraction
 } from "discord.js";
 import {config} from "../../config";
 
@@ -33,7 +34,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guild || intersection.size === 0) {
         return interaction.reply(`You're not allowed to do this.`);
     }
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ephemeral: true});
     const applicantHandled = await handleApplicant(interaction);
     if (!applicantHandled) {
         await interaction.editReply({content: "This command can only be ran in an applicant channel"});
