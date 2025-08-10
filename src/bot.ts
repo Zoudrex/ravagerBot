@@ -22,7 +22,7 @@ client.on("guildCreate", async (guild) => {
 });
 
 client.on('interactionCreate', async interaction => {
-    if (interaction.isCommand()) {
+    if (interaction.isChatInputCommand()) {
         // Handle command interactions
         const {commandName} = interaction;
         if (commands[commandName as keyof typeof commands]) {
