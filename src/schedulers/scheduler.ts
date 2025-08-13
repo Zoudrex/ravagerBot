@@ -41,8 +41,8 @@ class Scheduler {
             start: false,
         })
 
-        // this.jobs.push(this.inviteReminder);
-        // this.jobs.push(this.waShtReminder);
+        this.jobs.push(this.inviteReminder);
+        this.jobs.push(this.waShtReminder);
         this.jobs.push(this.applicantCleanup);
     }
 
