@@ -26,7 +26,7 @@ class Scheduler {
         this.waShtReminder = CronJob.from({
             cronTime: '0 20 17 * * 0,1,4',
             onTick: function () {
-                Scheduler.sendRaidReminder('Reminder: Make sure your WeakAuras are up-to-date and your sims are submitted to WoWAudit.')
+                Scheduler.sendRaidReminder('Reminder: Make sure your **WeakAuras** and **Add-ons** are up-to-date and your sims are submitted to WoWAudit.')
             },
             start: false,
             name: 'Update your shit'
