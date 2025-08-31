@@ -51,33 +51,38 @@ export async function execute(interaction: ButtonInteraction) {
         })
     }
 
-    if(category.children.cache.size >= 50) {
+    if (category.children.cache.size >= 40) {
         await deleteOldestTicket(category.children.cache);
     }
 
     const member = interaction.member as GuildMember
     channel.messages.cache.each(message => {
-        if (message.author.bot){
+        if (message.author.bot) {
             message.edit({content: `This ticket has been closed by ${member}.`, components: []})
         }
     })
     await channel.setParent(category, {lockPermissions: false});
-    await channel.permissionOverwrites.edit(channel.guild.roles.everyone, { SendMessages: false })
+    await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {SendMessages: false})
 
     return interaction.reply({content: `Y E E T`, ephemeral: true})
 }
 
 async function deleteOldestTicket(tickets: Collection<string, CategoryChildChannel>) {
-    const parsedTickets: ParsedTicket[] = [];
-    tickets.each(ticket => {
-        parsedTickets.push({
-            id: ticket,
-            date: parseDateFromTicket(ticket.name)
-        })
-    })
+    const reduced = tickets.reduce((min, item) =>
+        BigInt(item.id) < BigInt(min.id) ? item : min
+    );
 
-    parsedTickets.sort((ticket1, ticket2) => ticket1.date.getTime() - ticket2.date.getTime());
-    await parsedTickets[0].id.delete();
+    //
+    // const parsedTickets: ParsedTicket[] = [];
+    // tickets.each(ticket => {
+    //     parsedTickets.push({
+    //         id: ticket,
+    //         date: parseDateFromTicket(ticket.name)
+    //     })
+    // })
+
+    // parsedTickets.sort((ticket1, ticket2) => ticket1.date.getTime() - ticket2.date.getTime());
+    await reduced.delete();
 }
 
 function parseDateFromTicket(ticket: string): Date {
