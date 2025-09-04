@@ -1,10 +1,13 @@
 module.exports = {
     apps: [
         {
-            name: "RAVAGER bot",
-            script: "npm",
-            args: "run start",
-            cwd: __dirname, // ensure it runs from project root
-        },
-    ],
+            name: "discord-bot",
+            script: "dist/bot.js",
+            cwd: __dirname,
+            watch: false,
+            env: {
+                NODE_ENV: "production"
+            }
+        }
+    ]
 };
