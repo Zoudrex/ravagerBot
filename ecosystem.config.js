@@ -1,9 +1,9 @@
 module.exports = {
     apps: [
         {
-            name: "discord-bot",
-            script: "npx",
-            args: "dotenv -e .env -- tsx src/bot.ts",
+            name: "RAVAGER bot",
+            script: "npm",
+            args: "run start",
             cwd: __dirname, // ensure it runs from project root
         },
     ],
