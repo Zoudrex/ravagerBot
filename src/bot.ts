@@ -83,6 +83,36 @@ client.on("guildMemberAdd", async (member) => {
     await member.roles.add(rvgRaiderRole);
 })
 
+// Fired if a shard disconnects from Discord
+client.on("shardDisconnect", (event, shardId) => {
+    console.warn(`⚠️ Shard ${shardId} disconnected (code ${event.code})`);
+});
+
+// Fired if Discord.js encounters a low-level WebSocket error
+client.on("shardError", (error, shardId) => {
+    console.error(`❌ Shard ${shardId} error:`, error);
+});
+
+// Fired if the session is invalid (requires a full restart)
+client.on("invalidated", () => {
+    console.error("❌ Bot session invalidated. Restarting...");
+    process.exit(1);
+});
+
+// Fired if the bot disconnects completely
+client.on("disconnect", () => {
+    console.warn("⚠️ Bot disconnected. Exiting for restart...");
+    process.exit(1);
+});
+
+// Watchdog: check every 5 minutes if still connected
+setInterval(() => {
+    if (!client.isReady()) {
+        console.error("❌ Bot not ready. Restarting...");
+        process.exit(1);
+    }
+}, 5 * 60 * 1000);
+
 client.login(config.DISCORD_TOKEN);
 
 async function refreshBotCommands() {
