@@ -15,7 +15,7 @@ class Scheduler {
 
     constructor() {
         this.inviteReminder = CronJob.from({
-            cronTime: '0 20 19 * * 0,1,4',
+            cronTime: '0 20 19 * * 0,4',
             onTick: function () {
                 Scheduler.sendRaidReminder('Raid invites will be going out in 20 minutes!')
             },
@@ -24,7 +24,7 @@ class Scheduler {
         });
 
         this.waShtReminder = CronJob.from({
-            cronTime: '0 20 17 * * 0,1,4',
+            cronTime: '0 20 17 * * 0,4',
             onTick: function () {
                 Scheduler.sendRaidReminder('Reminder: Make sure your **WeakAuras** and **Add-ons** are up-to-date and your sims are submitted to WoWAudit.')
             },
