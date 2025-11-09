@@ -4,15 +4,16 @@ import cors from 'cors';
 import path from 'path';
 import { scheduler } from '../schedulers/schedulerInstance';
 import { ReminderConfig } from '../schedulers/scheduler';
+const publicDir = path.join(process.cwd(), 'public');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(publicDir));
 
 app.get('/', (_req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 app.get('/api/reminders', (_req, res) => {
