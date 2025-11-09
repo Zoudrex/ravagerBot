@@ -1,32 +1,58 @@
-import {CronJob} from 'cron';
+// Scheduler.ts
+import {CronJob, CronTime} from 'cron';
 import findChannel, {findChannelsOfCategory} from "../helpers/findChannel";
 import {config} from "../config";
 import {findGuildRole} from "../helpers/findRole";
 import {TextChannel} from "discord.js";
 import {findApplicant} from "../commands/applicants/handleApplicant";
 
+export type ReminderConfig = {
+    id: 'inviteReminder' | 'waShtReminder';
+    schedule: string;
+    enabled: boolean;
+    message: string;
+};
 
 class Scheduler {
     jobs: CronJob[] = [];
     inviteReminder: CronJob;
-    inviteStaller: CronJob | undefined;
     waShtReminder: CronJob;
+    inviteStaller: CronJob | undefined;
     applicantCleanup: CronJob;
 
+    // store configs in memory
+    private reminderConfigs: Record<ReminderConfig['id'], ReminderConfig> = {
+        inviteReminder: {
+            id: 'inviteReminder',
+            schedule: '0 20 19 * * sun,thu',
+            enabled: true,
+            message: 'Raid invites will be going out in 20 minutes!',
+        },
+        waShtReminder: {
+            id: 'waShtReminder',
+            schedule: '0 20 17 * * sun,thu',
+            enabled: true,
+            message: 'Reminder: Make sure your **WeakAuras** and **Add-ons** are up-to-date and your sims are submitted to WoWAudit.'
+        }
+    };
+
     constructor() {
+        const inviteCfg = this.reminderConfigs.inviteReminder;
+        const waCfg = this.reminderConfigs.waShtReminder;
+
         this.inviteReminder = CronJob.from({
-            cronTime: '0 20 19 * * sun,thu',
-            onTick: function () {
-                Scheduler.sendRaidReminder('Raid invites will be going out in 20 minutes!')
+            cronTime: inviteCfg.schedule,
+            onTick: () => {
+                Scheduler.sendRaidReminder(inviteCfg.message)
             },
             start: false,
             name: 'Raid invites'
         });
 
         this.waShtReminder = CronJob.from({
-            cronTime: '0 20 17 * * sun,thu',
-            onTick: function () {
-                Scheduler.sendRaidReminder('Reminder: Make sure your **WeakAuras** and **Add-ons** are up-to-date and your sims are submitted to WoWAudit.')
+            cronTime: waCfg.schedule,
+            onTick: () => {
+                Scheduler.sendRaidReminder(waCfg.message)
             },
             start: false,
             name: 'Update your shit'
@@ -45,6 +71,54 @@ class Scheduler {
         this.jobs.push(this.waShtReminder);
         this.jobs.push(this.applicantCleanup);
     }
+
+    // ---------- NEW: config accessors ----------
+
+    getReminderConfigs(): ReminderConfig[] {
+        return Object.values(this.reminderConfigs);
+    }
+
+    getReminderConfig(id: ReminderConfig['id']): ReminderConfig | undefined {
+        return this.reminderConfigs[id];
+    }
+
+    updateReminderConfig(
+        id: ReminderConfig['id'],
+        patch: Partial<Omit<ReminderConfig, 'id'>>
+    ): ReminderConfig | undefined {
+        const current = this.reminderConfigs[id];
+        if (!current) return;
+
+        const updated: ReminderConfig = { ...current, ...patch };
+        this.reminderConfigs[id] = updated;
+
+        // apply to running cron
+        if (id === 'inviteReminder') {
+            this.applyConfigToJob(this.inviteReminder, updated);
+        } else if (id === 'waShtReminder') {
+            this.applyConfigToJob(this.waShtReminder, updated);
+        }
+
+        return updated;
+    }
+
+    private applyConfigToJob(job: CronJob, cfg: ReminderConfig) {
+        // set schedule
+        job.setTime(new CronTime(cfg.schedule));
+
+        // start/stop based on enabled
+        if (cfg.enabled) {
+            if (!job.isActive) job.start();
+        } else {
+            if (job.isActive) job.stop();
+        }
+
+        // message is picked up via closure (inviteCfg / waCfg)
+        // so we also need to update those objects:
+        this.reminderConfigs[cfg.id].message = cfg.message;
+    }
+
+    // ---------- existing code below ----------
 
     async skipNext(nights: number = 1, skipMessage: boolean) {
         const dates = this.inviteReminder.nextDates(1 + nights);
@@ -73,11 +147,9 @@ class Scheduler {
             raidCancelled.stop();
         }
 
-
-        // This cronjob is a way to re-start the original cron so the process can resume as normal after a cancelled raid
         this.inviteStaller = CronJob.from(
             {
-                cronTime: nextRaid.plus(6000), // Delay it by an hour in case same stick funsies
+                cronTime: nextRaid.plus(6000),
                 onTick: function () {
                     console.log('This should only happen once and fully stop the OG spam');
                 },
@@ -106,7 +178,6 @@ class Scheduler {
     }
 
     private static sendRaidReminder(message: string) {
-        // Find the channel
         const channel = findChannel(config.INVITE_REMINDER_CHANNEL_NAME ?? '', config.SERVER_ID ?? '');
         if (!channel) {
             console.log(`${config.INVITE_REMINDER_CHANNEL_NAME} channel not found!`)

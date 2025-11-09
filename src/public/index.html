@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Raid Reminders</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 2rem;
+            max-width: 900px;
+        }
+        h1 {
+            margin-bottom: 1.5rem;
+        }
+        .reminder {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .reminder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        .reminder-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 160px;
+        }
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        input[type="time"],
+        textarea {
+            padding: 0.35rem 0.5rem;
+            font: inherit;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        textarea {
+            min-height: 4rem;
+            resize: vertical;
+        }
+        .days {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem 0.75rem;
+        }
+        .days label {
+            font-weight: 400;
+            font-size: 0.85rem;
+        }
+        .days input {
+            margin-right: 0.25rem;
+        }
+        .enabled-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.9rem;
+        }
+        button.save-btn {
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+            cursor: pointer;
+            font: inherit;
+        }
+        button.save-btn:hover {
+            background: #e8e8e8;
+        }
+        .status {
+            margin-top: 0.25rem;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        .status.ok {
+            color: #1a7f37;
+        }
+        .status.error {
+            color: #b3261e;
+        }
+    </style>
+</head>
+<body>
+<h1>Raid reminder configuration</h1>
+<div id="reminders"></div>
+
+<script>
+    const DAYS = [
+        { key: 'sun', label: 'Sun' },
+        { key: 'mon', label: 'Mon' },
+        { key: 'tue', label: 'Tue' },
+        { key: 'wed', label: 'Wed' },
+        { key: 'thu', label: 'Thu' },
+        { key: 'fri', label: 'Fri' },
+        { key: 'sat', label: 'Sat' }
+    ];
+
+    const REMINDER_LABELS = {
+        inviteReminder: 'Raid invite reminder',
+        waShtReminder: 'WeakAura / WoWAudit reminder'
+    };
+
+    const ADMIN_TOKEN = '';
+
+    function pad2(n) {
+        n = Number(n) || 0;
+        return n < 10 ? '0' + n : '' + n;
+    }
+
+    function parseSchedule(schedule) {
+        if (!schedule || typeof schedule !== 'string') {
+            return { hour: 19, minute: 0, days: ['sun', 'thu'] };
+        }
+        const parts = schedule.trim().split(/\s+/);
+        if (parts.length < 6) {
+            return { hour: 19, minute: 0, days: ['sun', 'thu'] };
+        }
+        const [, min, hour, , , dow] = parts;
+        const days = dow === '*' ? [] : dow.split(',').map(d => d.toLowerCase());
+        return { hour: Number(hour) || 0, minute: Number(min) || 0, days };
+    }
+
+    function buildSchedule(time, selectedDays) {
+        if (!time || !/^\d{2}:\d{2}$/.test(time)) throw new Error('Invalid time');
+        const [hourStr, minuteStr] = time.split(':');
+        const hour = Number(hourStr);
+        const minute = Number(minuteStr);
+        if (Number.isNaN(hour) || Number.isNaN(minute)) throw new Error('Invalid time');
+        if (!selectedDays.length) throw new Error('Select at least one day');
+        const dow = selectedDays.join(',');
+        return `0 ${minute} ${hour} * * ${dow}`;
+    }
+
+    async function loadReminders() {
+        const res = await fetch('/api/reminders', {
+            headers: ADMIN_TOKEN ? { 'x-admin-token': ADMIN_TOKEN } : undefined
+        });
+        if (!res.ok) throw new Error('Failed to load reminders');
+        const reminders = await res.json();
+        renderReminders(reminders);
+    }
+
+    function renderReminders(reminders) {
+        const container = document.getElementById('reminders');
+        container.innerHTML = '';
+
+        reminders.forEach(r => {
+            const parsed = parseSchedule(r.schedule);
+            const timeValue = `${pad2(parsed.hour)}:${pad2(parsed.minute)}`;
+            const daySet = new Set(parsed.days);
+            const displayName = REMINDER_LABELS[r.id] || 'Reminder';
+
+            const section = document.createElement('section');
+            section.className = 'reminder';
+            section.dataset.id = r.id;
+
+            const daysHtml = DAYS.map(
+                d => `
+        <label>
+          <input type="checkbox" data-day="${d.key}" ${daySet.has(d.key) ? 'checked' : ''}>
+          ${d.label}
+        </label>`
+            ).join('');
+
+            section.innerHTML = `
+        <div class="reminder-header">
+          <div class="reminder-title">${displayName}</div>
+          <label class="enabled-toggle">
+            <input type="checkbox" data-field="enabled" ${r.enabled ? 'checked' : ''}>
+            Enabled
+          </label>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Time</label>
+            <input type="time" data-field="time" value="${timeValue}">
+          </div>
+          <div class="field">
+            <label>Days</label>
+            <div class="days">${daysHtml}</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Message</label>
+          <textarea data-field="message">${r.message || ''}</textarea>
+        </div>
+
+        <div class="row" style="justify-content: flex-end; align-items: center;">
+          <button class="save-btn">Save</button>
+          <div class="status" data-status></div>
+        </div>
+      `;
+
+            const saveBtn = section.querySelector('.save-btn');
+            const statusEl = section.querySelector('[data-status]');
+
+            saveBtn.addEventListener('click', async () => {
+                statusEl.textContent = '';
+                statusEl.className = 'status';
+                try {
+                    const enabled = section.querySelector('input[data-field="enabled"]').checked;
+                    const time = section.querySelector('input[data-field="time"]').value;
+                    const message = section.querySelector('textarea[data-field="message"]').value;
+                    const selectedDays = Array.from(
+                        section.querySelectorAll('input[type="checkbox"][data-day]:checked')
+                    ).map(el => el.getAttribute('data-day'));
+
+                    const schedule = buildSchedule(time, selectedDays);
+                    const res = await fetch(`/api/reminders/${r.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(ADMIN_TOKEN ? { 'x-admin-token': ADMIN_TOKEN } : {})
+                        },
+                        body: JSON.stringify({ enabled, message, schedule })
+                    });
+
+                    if (!res.ok) {
+                        const body = await res.json().catch(() => ({}));
+                        throw new Error(body.error || 'Failed to save');
+                    }
+
+                    statusEl.textContent = 'Saved';
+                    statusEl.classList.add('ok');
+                } catch (err) {
+                    console.error(err);
+                    statusEl.textContent = err.message || 'Error';
+                    statusEl.classList.add('error');
+                }
+            });
+
+            container.appendChild(section);
+        });
+    }
+
+    loadReminders().catch(err => {
+        console.error(err);
+        document.getElementById('reminders').textContent = 'Failed to load reminders.';
+    });
+</script>
+</body>
+</html>

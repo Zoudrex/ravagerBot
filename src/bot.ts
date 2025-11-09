@@ -3,13 +3,11 @@ import {config} from "./config";
 import {commands} from "./commands";
 import {deployCommands} from "./commands/deploy-commands";
 import {buttonInteractions} from "./buttonInteractions";
-import Scheduler from "./schedulers/scheduler";
+import {scheduler} from './schedulers/schedulerInstance';
 
 const client = new Client({
     intents: ["Guilds", "GuildMessages", "DirectMessages", "GuildMembers"],
 });
-
-const scheduler = new Scheduler();
 
 client.once("ready", async () => {
     scheduler.start();
