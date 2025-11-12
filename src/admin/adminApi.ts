@@ -16,13 +16,22 @@ app.get('/', (_req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
 });
 
+// adminApi.ts (GET /api/reminders)
 app.get('/api/reminders', (_req, res) => {
-    res.json(scheduler.getReminderConfigs());
+    const data = scheduler.getReminderConfigs();
+    const serverTimeZone =
+        process.env.SERVER_TZ ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        'UTC';
+
+    res.json({ reminders: data, serverTimeZone });
 });
+
 
 app.put('/api/reminders/:id', (req, res) => {
     const id = req.params.id as ReminderConfig['id'];
     const patch = req.body as Partial<Omit<ReminderConfig, 'id'>>;
+    console.log(patch);
     const updated = scheduler.updateReminderConfig(id, patch);
     if (!updated) {
         return res.status(404).json({ error: 'Unknown reminder id' });

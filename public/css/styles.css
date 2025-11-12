@@ -1,0 +1,125 @@
+:root {
+    --border: #dddddd;
+    --text-muted: #666666;
+    --ok: #1a7f37;
+    --error: #b3261e;
+    --bg: #f7f7f7;
+    --bg-hover: #eeeeee;
+}
+
+html, body {
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    line-height: 1.4;
+    color: #111;
+    background: #fff;
+    max-width: 960px;
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin: 0 0 1rem 0;
+}
+
+.card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.75rem 0;
+    background: #fff;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: .75rem;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: .5rem 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    min-width: 220px;
+    flex: 1 1 220px;
+}
+
+label {
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+input[type="time"],
+textarea {
+    padding: .45rem .6rem;
+    font: inherit;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+}
+
+textarea {
+    min-height: 4.5rem;
+    resize: vertical;
+}
+
+.days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+}
+
+.days label {
+    font-weight: 400;
+}
+
+.button-row {
+    display: flex;
+    gap: .6rem;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: .5rem;
+}
+
+button.save-button {
+    padding: .5rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    cursor: pointer;
+}
+
+button.save-button:hover {
+    background: var(--bg-hover);
+}
+
+.status {
+    font-size: .9rem;
+    color: var(--text-muted);
+}
+
+.status.ok {
+    color: var(--ok);
+}
+
+.status.error {
+    color: var(--error);
+}
