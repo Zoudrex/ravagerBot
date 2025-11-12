@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "dotenv -e .env.dev -- tsx watch src/bot.ts",
     "start": "dotenv -e .env -- tsx watch src/bot.ts",
-    "build": "tsup src/bot.ts --minify"
+    "build": "tsc -p tsconfig.json && pm2 delete discord-bot && pm2 start ecosystem.config.js && pm2 save"
   },
   "author": "",
   "license": "ISC",
