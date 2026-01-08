@@ -43,7 +43,7 @@ class Scheduler {
         this.inviteReminder = CronJob.from({
             cronTime: inviteCfg.schedule,
             onTick: () => {
-                Scheduler.sendRaidReminder(inviteCfg.message)
+                Scheduler.sendRaidReminder(this.reminderConfigs.inviteReminder.message);
             },
             start: false,
             name: 'Raid invites'
@@ -52,7 +52,7 @@ class Scheduler {
         this.waShtReminder = CronJob.from({
             cronTime: waCfg.schedule,
             onTick: () => {
-                Scheduler.sendRaidReminder(waCfg.message)
+                Scheduler.sendRaidReminder(this.reminderConfigs.waShtReminder.message);
             },
             start: false,
             name: 'Update your shit'
