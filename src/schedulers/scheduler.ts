@@ -32,7 +32,7 @@ class Scheduler {
             id: 'waShtReminder',
             schedule: '0 20 17 * * sun,thu',
             enabled: true,
-            message: 'Reminder: Make sure your **WeakAuras** and **Add-ons** are up-to-date and your sims are submitted to WoWAudit.'
+            message: 'Reminder: Make sure your **Add-ons** are up-to-date and your **UI** is functional!'
         }
     };
 
