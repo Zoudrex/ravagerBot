@@ -22,7 +22,6 @@ export default class WowAuditClient {
         const response = await fetch(`${WOWAUDIT_API_BASE_URL}/v1/raids`, {
             headers: {
                 Authorization: `Bearer ${config.WOWAUDIT_API_KEY}`,
-                'X-API-Key': config.WOWAUDIT_API_KEY,
             },
         });
 
