@@ -22,7 +22,6 @@ export function leftPadTwo(number) {
  * Parse a cron string in the format: "0 <minute> <hour> * * <days>"
  */
 export function parseCronSchedule(schedule) {
-    console.log(schedule);
     if (!schedule || typeof schedule !== 'string') {
         return { hour: 19, minute: 0, days: ['sun', 'thu'] };
     }

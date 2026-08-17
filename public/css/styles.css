@@ -99,6 +99,12 @@ textarea {
     margin-top: .5rem;
 }
 
+.sticky-actions {
+    border-top: 1px solid var(--border);
+    padding-top: .85rem;
+    margin-top: 1rem;
+}
+
 button.save-button {
     padding: .5rem .9rem;
     border: 1px solid var(--border);
@@ -107,8 +113,13 @@ button.save-button {
     cursor: pointer;
 }
 
-button.save-button:hover {
+button.save-button:hover:not(:disabled) {
     background: var(--bg-hover);
+}
+
+button.save-button:disabled {
+    cursor: default;
+    opacity: .55;
 }
 
 .status {
