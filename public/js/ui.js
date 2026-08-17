@@ -1,5 +1,5 @@
-import { DAY_OPTIONS, REMINDER_TITLES, leftPadTwo, parseCronSchedule, buildCronSchedule } from './cron.js';
-import { convertServerToClientTime, convertClientToServerTime, getOffsetMinutesForTimeZone } from './tz.js';
+import { DAY_OPTIONS, REMINDER_TITLES, leftPadTwo, parseCronSchedule, buildCronSchedule } from './cron.js?v=admin-ui-v2';
+import { convertServerToClientTime, convertClientToServerTime, getOffsetMinutesForTimeZone } from './tz.js?v=admin-ui-v2';
 
 const AUTO_SAVE_DELAY_MS = 2000;
 

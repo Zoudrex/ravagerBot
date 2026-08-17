@@ -9,7 +9,13 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, {
+    etag: false,
+    maxAge: 0,
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store');
+    },
+}));
 
 app.get('/', (_req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));

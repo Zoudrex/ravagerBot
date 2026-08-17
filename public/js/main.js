@@ -1,5 +1,5 @@
-import { fetchReminders, updateReminder } from './api.js';
-import { renderReminderList } from './ui.js';
+import { fetchReminders, updateReminder } from './api.js?v=admin-ui-v2';
+import { renderReminderList } from './ui.js?v=admin-ui-v2';
 
 async function bootstrap() {
     try {
