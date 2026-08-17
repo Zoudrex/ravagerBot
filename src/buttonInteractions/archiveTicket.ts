@@ -1,46 +1,26 @@
 import {
     ButtonInteraction,
+    CategoryChannel,
     CategoryChildChannel,
     ChannelType, Collection,
-    GuildBasedChannel,
     GuildMember,
+    Message,
     TextChannel
 } from "discord.js";
-
-const monthMap: Record<string, number> = {
-    jan: 0,
-    feb: 1,
-    mar: 2,
-    apr: 3,
-    may: 4,
-    june: 5,
-    july: 6,
-    aug: 7,
-    sept: 8,
-    oct: 9,
-    nov: 10,
-    dec: 11,
-};
-
-interface ParsedTicket {
-    id: CategoryChildChannel;
-    date: Date;
-}
+import { CATEGORY_NAMES } from "../constants/guild";
 
 export async function execute(interaction: ButtonInteraction) {
     if (!interaction.guild || !interaction.channel) {
         return interaction.reply('How...? How are you clicking a button outside of the server..?');
     }
 
+    await interaction.deferReply({ephemeral: true});
+
     const channel = interaction.channel as TextChannel;
-    let category: GuildBasedChannel | null = null;
-    const categoryName = 'ticket-archive'
-    interaction.guild.channels.cache.each(val => {
-        if (val.name === categoryName && val.type === ChannelType.GuildCategory) {
-            category = val;
-            return true;
-        }
-    })
+    let category = interaction.guild.channels.cache.find(
+        val => val.name === CATEGORY_NAMES.ticketArchive && val.type === ChannelType.GuildCategory
+    ) as CategoryChannel | undefined;
+    const categoryName = CATEGORY_NAMES.ticketArchive;
 
     // In case the category doesn't exist, create it.
     if (!category) {
@@ -56,15 +36,20 @@ export async function execute(interaction: ButtonInteraction) {
     }
 
     const member = interaction.member as GuildMember
-    channel.messages.cache.each(message => {
-        if (message.author.bot) {
-            message.edit({content: `This ticket has been closed by ${member}.`, components: []})
-        }
-    })
+    const botMessagesWithComponents = await findBotComponentMessages(channel, interaction.client.user?.id);
+
+    const editResults = await Promise.allSettled(botMessagesWithComponents.map(message =>
+        message.edit({content: `This ticket has been closed by ${member}.`, components: []})
+    ));
+
+    editResults
+        .filter(result => result.status === "rejected")
+        .forEach(result => console.warn("Failed to edit archived ticket message:", result.reason));
+
     await channel.setParent(category, {lockPermissions: false});
     await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {SendMessages: false})
 
-    return interaction.reply({content: `Y E E T`, ephemeral: true})
+    return interaction.editReply({content: `Y E E T`})
 }
 
 async function deleteOldestTicket(tickets: Collection<string, CategoryChildChannel>) {
@@ -72,33 +57,30 @@ async function deleteOldestTicket(tickets: Collection<string, CategoryChildChann
         BigInt(item.id) < BigInt(min.id) ? item : min
     );
 
-    //
-    // const parsedTickets: ParsedTicket[] = [];
-    // tickets.each(ticket => {
-    //     parsedTickets.push({
-    //         id: ticket,
-    //         date: parseDateFromTicket(ticket.name)
-    //     })
-    // })
-
-    // parsedTickets.sort((ticket1, ticket2) => ticket1.date.getTime() - ticket2.date.getTime());
     await reduced.delete();
 }
 
-function parseDateFromTicket(ticket: string): Date {
-    // Match the last part of the string: {month}-{day}-{hour}h?{minute}m?
-    const regex = /([a-z]{3,4})-(\d{1,2})-(\d{1,2})h?(\d{1,2})m?$/i;
-    const match = ticket.match(regex);
+async function findBotComponentMessages(channel: TextChannel, botId?: string): Promise<Message[]> {
+    if (!botId) {
+        return [];
+    }
 
-    if (!match) throw Error(`no match found, shouldn't happen, trying to match ${ticket}`);
+    const matches: Message[] = [];
+    let before: string | undefined;
 
-    const [, monthStr, dayStr, hourStr, minuteStr] = match;
-    const month = monthMap[monthStr.toLowerCase()];
+    do {
+        const messages = await channel.messages.fetch({limit: 100, before});
 
-    const day = parseInt(dayStr, 10);
-    const hour = parseInt(hourStr, 10);
-    const minute = parseInt(minuteStr, 10);
+        messages
+            .filter(message => message.author.id === botId && message.components.length > 0)
+            .each(message => matches.push(message));
 
-    const year = new Date().getFullYear(); // Or use a different strategy
-    return new Date(year, month, day, hour, minute);
+        before = messages.last()?.id;
+
+        if (matches.length > 0 || messages.size < 100) {
+            break;
+        }
+    } while (before);
+
+    return matches;
 }

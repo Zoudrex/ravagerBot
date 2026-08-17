@@ -1,11 +1,11 @@
 import {
-    CommandInteraction,
     PermissionFlagsBits,
     SlashCommandBuilder,
     GuildMember, ChatInputCommandInteraction,
 } from 'discord.js';
 
-import botVars from "../bot";
+import { getScheduler } from "../app/context";
+import { STAFF_ROLES } from "../constants/guild";
 
 export const data = new SlashCommandBuilder()
     .setName('cancelraid')
@@ -24,17 +24,18 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     const member = interaction.member as GuildMember;
-    const allowedRoles = ['GM', 'Assistant GM', 'Officer', 'Officers'];
-    const intersection = member.roles.cache.filter(role => allowedRoles.includes(role.name));
+    const intersection = member.roles.cache.filter(role => STAFF_ROLES.includes(role.name));
     if (!interaction.guild || intersection.size === 0) {
         return interaction.reply(`You're not allowed to do this.`);
     }
+
+    await interaction.deferReply({ephemeral: true});
 
     const nightCount = interaction.options.getInteger('nightcount') ?? 1;
     const skipMessage = interaction.options.getBoolean('skipmessage') ?? false;
 
     console.log(`Going to cancel ${nightCount} nights`);
-    await botVars.scheduler.skipNext(+nightCount, skipMessage);
+    await getScheduler().skipNext(+nightCount, skipMessage);
     const content = skipMessage ? 'All good, skipped the next raid' : 'All good, skipped the next raid and posted a message';
-    await interaction.reply({content, ephemeral: true});
+    await interaction.editReply({content});
 }

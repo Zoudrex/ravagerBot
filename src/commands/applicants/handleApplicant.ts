@@ -8,6 +8,7 @@ import {
     ChatInputCommandInteraction
 } from "discord.js";
 import {config} from "../../config";
+import { CATEGORY_NAMES, RECRUITMENT_ROLES } from "../../constants/guild";
 
 export const data = new SlashCommandBuilder()
     .setName('handleapplicant')
@@ -27,10 +28,8 @@ export const data = new SlashCommandBuilder()
     )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-    console.log("executing");
     const member = interaction.member as GuildMember;
-    const allowedRoles = ['GM', 'Assistant GM', 'Recruitment'];
-    const intersection = member.roles.cache.filter(role => allowedRoles.includes(role.name));
+    const intersection = member.roles.cache.filter(role => RECRUITMENT_ROLES.includes(role.name));
     if (!interaction.guild || intersection.size === 0) {
         return interaction.reply(`You're not allowed to do this.`);
     }
@@ -53,8 +52,12 @@ export async function findApplicant(channel: TextChannel) {
 }
 
 async function handleApplicant(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guild) {
+        return false;
+    }
+
     const channel = interaction.channel as TextChannel;
-    if (channel.parent?.name !== "ꓮpplicants") {
+    if (channel.parent?.name !== CATEGORY_NAMES.applicants) {
         return false;
     }
     // Find the applicant for the channel the interaction happened in
@@ -68,24 +71,45 @@ async function handleApplicant(interaction: ChatInputCommandInteraction) {
 
     const accepted = interaction.options.getBoolean("accept");
     const message = interaction.options.getString("message");
-    await interaction.guild?.roles.fetch()
+    await interaction.guild.roles.fetch()
     const raiderRole = interaction.guild?.roles.cache.find(role => role.name === config.RAIDER_ROLE_NAME);
-    const applicantRole = interaction.guild?.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME) as Role;
-    console.log("Removing applicant");
-    await applicant.roles.remove(applicantRole);
-    if (accepted && raiderRole) {
-        console.log("Assigning raider");
-        await applicant.roles.add(raiderRole);
+    const applicantRole = interaction.guild?.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
+
+    if (!applicantRole) {
+        await interaction.editReply("Applicant role could not be found. No changes were made.");
+        return true;
     }
 
-    if (!accepted) {
-        const baseMessage = 'Hi, I\'m sorry to inform you that you\'ve been declined for your application to RAVAGE.';
-        await applicant.send(message ? baseMessage + 'Reason: ' + message : baseMessage);
-        await applicant.kick();
+    if (accepted && !raiderRole) {
+        await interaction.editReply("Raider role could not be found. No changes were made.");
+        return true;
     }
 
-    console.log("All done, deleting channel");
-    await interaction.editReply("done");
-    await channel.delete("Applicant no longer exists");
+    try {
+        await applicant.roles.remove(applicantRole);
+
+        if (accepted && raiderRole) {
+            await applicant.roles.add(raiderRole);
+        }
+
+        if (!accepted) {
+            const baseMessage = 'Hi, I\'m sorry to inform you that you\'ve been declined for your application to RAVAGE.';
+
+            try {
+                await applicant.send(message ? `${baseMessage} Reason: ${message}` : baseMessage);
+            } catch (error) {
+                console.warn(`Could not DM declined applicant ${applicant.id}:`, error);
+            }
+
+            await applicant.kick('Application declined');
+        }
+
+        await interaction.editReply("done");
+        await channel.delete("Applicant handled");
+    } catch (error) {
+        console.error(`Failed to handle applicant ${applicant.id}:`, error);
+        await interaction.editReply("Something went wrong while handling this applicant. No channel cleanup was performed.");
+    }
+
     return true;
 }

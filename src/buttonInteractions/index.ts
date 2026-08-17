@@ -1,11 +1,17 @@
 import * as createTicket from "./createTicketButton";
 import * as archiveTicket from "./archiveTicket";
-export const buttonInteractions = {
+import { BUTTON_IDS } from "../constants/guild";
+import type { ButtonInteractionHandler } from "../interactions/types";
+
+const buttonInteractionAliases: Record<string, string> = {
+    [BUTTON_IDS.createApplyTicket]: BUTTON_IDS.createTicket,
+};
+
+export const buttonInteractions: Record<string, ButtonInteractionHandler> = {
     createTicket,
     archiveTicket,
 };
 
-export const buttonInteractionIds = [
-    "createTicket",
-    "createApplyTicket"
-];
+export function resolveButtonInteractionId(customId: string): string {
+    return buttonInteractionAliases[customId] ?? customId;
+}

@@ -3,14 +3,16 @@ import * as deploy from "./deployChannels"
 import * as cancelraid from "./cancelRaid"
 import * as nextraid from "./nextRaid"
 import * as handleapplicant from "./applicants/handleApplicant"
-import {startAdminApi} from "../admin/adminApi";
+import type { SlashCommand } from "../interactions/types";
 
-startAdminApi();
-
-export const commands = {
+const commandList: SlashCommand[] = [
     ping,
     deploy,
     cancelraid,
     nextraid,
     handleapplicant
-};
+];
+
+export const commands: Record<string, SlashCommand> = Object.fromEntries(
+    commandList.map(command => [command.data.name, command])
+);

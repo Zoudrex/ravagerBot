@@ -1,5 +1,5 @@
 import {BaseInteraction} from "discord.js";
-import botVars from "../bot";
+import { getClient } from "../app/context";
 
 /**
  * @returns false whenever provided roleName cannot be found.
@@ -14,7 +14,7 @@ export function findRole(roleName: string, interaction: BaseInteraction) {
 }
 
 export function findGuildRole(guildId: string, roleName: string) {
-    const guild = botVars.client.guilds.cache.get(guildId);
+    const guild = getClient().guilds.cache.get(guildId);
     if(!guild) {
         throw Error(`The guild cannot be found ${guildId}`);
     }

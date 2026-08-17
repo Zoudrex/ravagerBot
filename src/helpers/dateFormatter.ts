@@ -1,8 +1,9 @@
-import botVars from "../bot";
+import { getScheduler } from "../app/context";
 
 export default function determineNextRaid() {
-    const invReminder = botVars.scheduler.getInviteReminder();
-    const dateScheduler = invReminder.isActive ? invReminder : botVars.scheduler.getInviteStaller();
+    const scheduler = getScheduler();
+    const invReminder = scheduler.getInviteReminder();
+    const dateScheduler = invReminder.isActive ? invReminder : scheduler.getInviteStaller();
     if (!dateScheduler) {
         throw Error("Ah oh spaghetti-o, this should never happen. Couldn't fetch date for next raid");
     }

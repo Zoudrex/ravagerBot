@@ -4,9 +4,11 @@ import {
     ButtonStyle, CategoryChannel,
     ChannelType,
     GuildChannelManager,
-    GuildMember, InteractionReplyOptions, MessagePayload,
+    GuildMember, InteractionReplyOptions,
     PermissionsBitField, Role, TextChannel
 } from "discord.js";
+import { BUTTON_IDS, CATEGORY_NAMES, ROLE_NAMES } from "../constants/guild";
+import { config } from "../config";
 import {findRole} from "../helpers/findRole";
 
 export async function execute(interaction: ButtonInteraction) {
@@ -14,16 +16,21 @@ export async function execute(interaction: ButtonInteraction) {
         return interaction.reply('How...?');
     }
 
-    console.log(interaction.customId);
+    await interaction.deferReply({ephemeral: true});
 
-    const rolesToFind = interaction.customId === 'createApplyTicket' ? ["Recruitment"] : ["Officer"];
+    const rolesToFind = interaction.customId === BUTTON_IDS.createApplyTicket ? [ROLE_NAMES.recruitment] : [ROLE_NAMES.officer];
     const roles: Role[] = [];
 
-    const channelPrefix = interaction.customId === "createApplyTicket" ? 'applicant' : 'ticket';
-    const categoryName = interaction.customId === "createApplyTicket" ? 'ꓮpplicants' : 'Tickets';
+    const channelPrefix = interaction.customId === BUTTON_IDS.createApplyTicket ? 'applicant' : 'ticket';
+    const categoryName = interaction.customId === BUTTON_IDS.createApplyTicket ? CATEGORY_NAMES.applicants : CATEGORY_NAMES.tickets;
 
+    const applicantRole = interaction.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
     const channelManager = interaction.guild.channels
-    const category = await findCategory(channelManager, categoryName)
+    const category = await findCategory(
+        channelManager,
+        categoryName,
+        categoryName === CATEGORY_NAMES.tickets ? applicantRole?.id : undefined
+    )
 
     const member = interaction.member as GuildMember
 
@@ -42,7 +49,7 @@ export async function execute(interaction: ButtonInteraction) {
             roles.push(findRole(role, interaction));
         })
     } catch (e: any) {
-        return interaction.reply({content: e.message, ephemeral: true});
+        return sendAutoDeleteEphemeral(interaction, {content: e.message, ephemeral: true});
     }
 
     const permissions = [{
@@ -68,7 +75,7 @@ export async function execute(interaction: ButtonInteraction) {
     })
 
 
-    await addArchiveButton(channel, roles, interaction.customId !== "createApplyTicket");
+    await addArchiveButton(channel, roles, interaction.customId !== BUTTON_IDS.createApplyTicket);
     await sendAutoDeleteEphemeral(interaction, {
         content: `Your ticket has been created. ${channel}`,
         ephemeral: true
@@ -77,11 +84,21 @@ export async function execute(interaction: ButtonInteraction) {
     return;
 }
 
-async function sendAutoDeleteEphemeral(interaction: ButtonInteraction, options: string | MessagePayload | InteractionReplyOptions, delay: number = 7500): Promise<void> {
-    const deleteEphemeral = await interaction.reply(options);
+async function sendAutoDeleteEphemeral(interaction: ButtonInteraction, options: string | InteractionReplyOptions, delay: number = 7500): Promise<void> {
+    if (interaction.deferred || interaction.replied) {
+        if (typeof options === "string") {
+            await interaction.editReply(options);
+        } else {
+            const {ephemeral, flags, ...editOptions} = options;
+            await interaction.editReply(editOptions);
+        }
+    } else {
+        await interaction.reply(options);
+    }
+
     setTimeout(async () => {
         try {
-            await deleteEphemeral.delete();
+            await interaction.deleteReply();
         } catch (error) {
             console.error("Failed to remove ephemeral message:", error);
         }
@@ -90,7 +107,7 @@ async function sendAutoDeleteEphemeral(interaction: ButtonInteraction, options: 
 
 async function addArchiveButton(channel: TextChannel, roles: Role[], includeButton: boolean): Promise<void> {
     const createTicketButton = new ButtonBuilder()
-        .setCustomId('archiveTicket')
+        .setCustomId(BUTTON_IDS.archiveTicket)
         .setLabel('Close ticket ✅')
         .setStyle(ButtonStyle.Success);
     let roleTxt = "";
@@ -123,7 +140,7 @@ function formatTicketName(displayName: string, channelPrefix: string): string {
     return `${channelPrefix}-${displayName}-${months[date.getMonth()]}-${dayNumber}-${date.getHours()}H${minutes}M`.toLowerCase()
 }
 
-async function findCategory(channelManager: GuildChannelManager, categoryName: string): Promise<CategoryChannel> {
+async function findCategory(channelManager: GuildChannelManager, categoryName: string, applicantRoleId?: string): Promise<CategoryChannel> {
     let category = channelManager.cache
         .filter(val => val.name === categoryName && val.type === ChannelType.GuildCategory)
         .first() as CategoryChannel
@@ -133,8 +150,16 @@ async function findCategory(channelManager: GuildChannelManager, categoryName: s
         category = await channelManager.create({
             type: ChannelType.GuildCategory,
             name: categoryName,
-            position: 0
+            position: 0,
+            permissionOverwrites: applicantRoleId ? [{
+                id: applicantRoleId,
+                deny: [PermissionsBitField.Flags.ViewChannel],
+            }] : undefined
         })
+    } else if (applicantRoleId) {
+        await category.permissionOverwrites.edit(applicantRoleId, {
+            ViewChannel: false,
+        });
     }
 
     return category;

@@ -55,7 +55,7 @@ class Scheduler {
             cronTime: cfg.schedule,
             onTick: () => {
                 const currentConfig = this.reminderConfigs[id];
-                Scheduler.sendRaidReminder(currentConfig.message);
+                void Scheduler.sendRaidReminder(currentConfig.message);
             },
             start: false,
             name,
@@ -68,6 +68,10 @@ class Scheduler {
 
     getReminderConfig(id: ReminderId): ReminderConfig {
         return this.reminderConfigs[id];
+    }
+
+    hasReminderConfig(id: string): id is ReminderId {
+        return id in this.reminderConfigs;
     }
 
     updateReminderConfig(
@@ -134,7 +138,7 @@ class Scheduler {
             const raidCancelled = CronJob.from({
                 cronTime: '* * * * * *',
                 onTick: () => {
-                    Scheduler.sendRaidReminder(`Sadly, raid has been cancelled. See y'all at ${date}`);
+                    void Scheduler.sendRaidReminder(`Sadly, raid has been cancelled. See y'all at ${date}`);
                 },
                 onComplete: null,
                 start: false,
@@ -167,15 +171,24 @@ class Scheduler {
         this.inviteStaller.runOnce = true;
     }
 
-    private static sendRaidReminder(message: string): void {
-        const channel = findChannel(config.INVITE_REMINDER_CHANNEL_NAME ?? '', config.SERVER_ID ?? '');
-        if (!channel) {
-            console.log(`${config.INVITE_REMINDER_CHANNEL_NAME} channel not found!`);
-            return;
-        }
+    private static async sendRaidReminder(message: string): Promise<void> {
+        try {
+            const channel = findChannel(config.INVITE_REMINDER_CHANNEL_NAME ?? '', config.SERVER_ID);
+            if (!channel) {
+                console.log(`${config.INVITE_REMINDER_CHANNEL_NAME} channel not found!`);
+                return;
+            }
 
-        const role = findGuildRole(config.SERVER_ID ?? '', 'Raiders');
-        channel.send(`${role} ${message}`);
+            if (!config.RAIDER_ROLE_NAME) {
+                console.log('Raider role name not configured!');
+                return;
+            }
+
+            const role = findGuildRole(config.SERVER_ID, config.RAIDER_ROLE_NAME);
+            await channel.send(`${role} ${message}`);
+        } catch (error) {
+            console.error('Failed to send raid reminder:', error);
+        }
     }
 }
 
