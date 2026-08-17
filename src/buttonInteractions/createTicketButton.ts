@@ -1,15 +1,15 @@
 import {
     ButtonBuilder,
     ButtonInteraction,
-    ButtonStyle, CategoryChannel,
+    ButtonStyle,
     ChannelType,
-    GuildChannelManager,
     GuildMember, InteractionReplyOptions,
     PermissionsBitField, Role, TextChannel
 } from "discord.js";
 import { BUTTON_IDS, CATEGORY_NAMES, ROLE_NAMES } from "../constants/guild";
 import { config } from "../config";
 import {findRole} from "../helpers/findRole";
+import { findOrCreateCategory } from "../services/findOrCreateCategory";
 
 export async function execute(interaction: ButtonInteraction) {
     if (!interaction.guild) {
@@ -18,7 +18,7 @@ export async function execute(interaction: ButtonInteraction) {
 
     await interaction.deferReply({ephemeral: true});
 
-    const rolesToFind = interaction.customId === BUTTON_IDS.createApplyTicket ? [ROLE_NAMES.recruitment] : [ROLE_NAMES.officer];
+    const rolesToFind = [ROLE_NAMES.officer];
     const roles: Role[] = [];
 
     const channelPrefix = interaction.customId === BUTTON_IDS.createApplyTicket ? 'applicant' : 'ticket';
@@ -26,7 +26,7 @@ export async function execute(interaction: ButtonInteraction) {
 
     const applicantRole = interaction.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
     const channelManager = interaction.guild.channels
-    const category = await findCategory(
+    const category = await findOrCreateCategory(
         channelManager,
         categoryName,
         categoryName === CATEGORY_NAMES.tickets ? applicantRole?.id : undefined
@@ -140,27 +140,3 @@ function formatTicketName(displayName: string, channelPrefix: string): string {
     return `${channelPrefix}-${displayName}-${months[date.getMonth()]}-${dayNumber}-${date.getHours()}H${minutes}M`.toLowerCase()
 }
 
-async function findCategory(channelManager: GuildChannelManager, categoryName: string, applicantRoleId?: string): Promise<CategoryChannel> {
-    let category = channelManager.cache
-        .filter(val => val.name === categoryName && val.type === ChannelType.GuildCategory)
-        .first() as CategoryChannel
-
-    // In case the category doesn't exist, create it.
-    if (!category) {
-        category = await channelManager.create({
-            type: ChannelType.GuildCategory,
-            name: categoryName,
-            position: 0,
-            permissionOverwrites: applicantRoleId ? [{
-                id: applicantRoleId,
-                deny: [PermissionsBitField.Flags.ViewChannel],
-            }] : undefined
-        })
-    } else if (applicantRoleId) {
-        await category.permissionOverwrites.edit(applicantRoleId, {
-            ViewChannel: false,
-        });
-    }
-
-    return category;
-}

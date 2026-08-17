@@ -8,7 +8,7 @@ import {
     ChatInputCommandInteraction
 } from "discord.js";
 import {config} from "../../config";
-import { CATEGORY_NAMES, RECRUITMENT_ROLES } from "../../constants/guild";
+import { CATEGORY_NAMES, STAFF_ROLES } from "../../constants/guild";
 
 export const data = new SlashCommandBuilder()
     .setName('handleapplicant')
@@ -29,7 +29,7 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     const member = interaction.member as GuildMember;
-    const intersection = member.roles.cache.filter(role => RECRUITMENT_ROLES.includes(role.name));
+    const intersection = member.roles.cache.filter(role => STAFF_ROLES.includes(role.name));
     if (!interaction.guild || intersection.size === 0) {
         return interaction.reply(`You're not allowed to do this.`);
     }

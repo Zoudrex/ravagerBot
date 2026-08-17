@@ -16,6 +16,7 @@ import {
 } from 'discord.js';
 import {config} from "../config";
 import { BUTTON_IDS, CATEGORY_NAMES, CHANNEL_NAMES, STAFF_ROLES } from "../constants/guild";
+import { findOrCreateCategory } from "../services/findOrCreateCategory";
 
 const CATEGORIES_TO_DELETE: readonly string[] = [
     CATEGORY_NAMES.tickets,
@@ -53,6 +54,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         }
 
         const applicantRole = interaction.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
+        const ticketCategory = await findOrCreateCategory(
+            interaction.guild.channels,
+            CATEGORY_NAMES.tickets,
+            applicantRole?.id
+        );
+        const applicantCategory = await findOrCreateCategory(
+            interaction.guild.channels,
+            CATEGORY_NAMES.applicants
+        );
         const ticketChannelPermissionOverwrites = [{
             id: interaction.guild.id,
             deny: PermissionFlagsBits.SendMessages
@@ -71,11 +81,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const channelGeneral = await interaction.guild.channels.create({
             name: CHANNEL_NAMES.tickets,
             type: ChannelType.GuildText,
+            parent: ticketCategory.id,
             permissionOverwrites: ticketChannelPermissionOverwrites
         }) as TextChannel;
 
         if (applicantRole) {
-            await createApplicantChannel(interaction);
+            await createApplicantChannel(interaction, applicantCategory);
         }
 
 
@@ -139,7 +150,7 @@ async function deleteCategoryWithChildren(category: CategoryChannel): Promise<vo
     await category.delete();
 }
 
-async function createApplicantChannel(interaction: ChatInputCommandInteraction) {
+async function createApplicantChannel(interaction: ChatInputCommandInteraction, category: CategoryChannel) {
     const applicantRole = interaction.guild?.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
     if (!applicantRole) {
         console.log('Applicant role does not exist');
@@ -149,6 +160,7 @@ async function createApplicantChannel(interaction: ChatInputCommandInteraction) 
     const channelApply = await interaction.guild?.channels.create({
         name: CHANNEL_NAMES.apply,
         type: ChannelType.GuildText,
+        parent: category.id,
         permissionOverwrites: [{
             id: interaction.guild.id,
             deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ViewChannel]
@@ -177,17 +189,22 @@ async function createApplicantChannel(interaction: ChatInputCommandInteraction) 
                 "\n" +
                 "After CE we aim to keep raid days down to just Thursday 20:00 - 23:00 \n" +
                 "\n" +
-                "Aberrus: 9/9 M - Rank: 904\n" +
+                "**Dragonflight**\n" +
+                "Aberrus: 9/9M - Rank: 904\n" +
                 "Amirdrassil: 9/9M - Rank: 770\n" +
-                "Nerub-ar Palace 8/8M -  Rank: 596\n" +
-                "Liberation of the Undermined 8/8M -  Rank: 753\n" +
+                "VS/DR/MQD: 9/9M - Rank: 513\n" +
+                "\n" +
+                "**The War Within**\n" +
+                "Nerub-ar Palace: 8/8M - Rank: 596\n" +
+                "Liberation of the Undermined: 8/8M - Rank: 753\n" +
+                "Manaforge Omega: 8/8M - Rank: 591\n" +
                 "\n" +
                 "You can find us on: \n" +
                 "[Raider.io](https://raider.io/guilds/eu/draenor/RAVAGE)\n" +
                 "[WarcraftLogs](https://www.warcraftlogs.com/guild/id/789457)\n" +
                 "[WoWProgress](https://www.wowprogress.com/guild/eu/draenor/RAVAGE)\n" +
                 "\n" +
-                "If interested in applying to the guild or connecting with our recruitment officers please click the apply button below!\n\n\n\n" +
+                "If interested in applying to the guild or connecting with our officers please click the apply button below!\n\n\n\n" +
                 " ",
             components: [
                 {

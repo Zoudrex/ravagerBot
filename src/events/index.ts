@@ -7,7 +7,7 @@ import { handleReady } from "./ready";
 export function registerEventHandlers(client: Client, context: AppContext): void {
     client.once(Events.ClientReady, async () => {
         try {
-            await handleReady(client, context.scheduler);
+            await handleReady(context.scheduler);
         } catch (error) {
             console.error("Failed to initialize bot after ready:", error);
         }

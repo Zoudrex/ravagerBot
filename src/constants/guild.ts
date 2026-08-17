@@ -3,8 +3,6 @@ export const ROLE_NAMES = {
     assistantGm: "Assistant GM",
     officer: "Officer",
     officers: "Officers",
-    recruitment: "Recruitment",
-    social: "Social",
 } as const;
 
 export const STAFF_ROLES: readonly string[] = [
@@ -12,12 +10,6 @@ export const STAFF_ROLES: readonly string[] = [
     ROLE_NAMES.assistantGm,
     ROLE_NAMES.officer,
     ROLE_NAMES.officers,
-];
-
-export const RECRUITMENT_ROLES: readonly string[] = [
-    ROLE_NAMES.gm,
-    ROLE_NAMES.assistantGm,
-    ROLE_NAMES.recruitment,
 ];
 
 export const CHANNEL_NAMES = {
