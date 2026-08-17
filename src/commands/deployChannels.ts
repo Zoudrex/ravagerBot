@@ -192,12 +192,14 @@ async function createApplicantChannel(interaction: ChatInputCommandInteraction, 
                 "**Dragonflight**\n" +
                 "Aberrus: 9/9M - Rank: 904\n" +
                 "Amirdrassil: 9/9M - Rank: 770\n" +
-                "VS/DR/MQD: 9/9M - Rank: 513\n" +
                 "\n" +
                 "**The War Within**\n" +
                 "Nerub-ar Palace: 8/8M - Rank: 596\n" +
                 "Liberation of the Undermined: 8/8M - Rank: 753\n" +
                 "Manaforge Omega: 8/8M - Rank: 591\n" +
+                "\n" +
+                "**Midnight**\n" +
+                "VS/DR/MQD: 9/9M - Rank: 513\n" +
                 "\n" +
                 "You can find us on: \n" +
                 "[Raider.io](https://raider.io/guilds/eu/draenor/RAVAGE)\n" +
