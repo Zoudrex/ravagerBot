@@ -3,6 +3,7 @@ import findChannel from '../helpers/findChannel';
 import { config } from '../config';
 import { findGuildRole } from '../helpers/findRole';
 import ReminderConfigStore from '../services/ReminderConfigStore';
+import RaidReminderGate from '../services/RaidReminderGate';
 
 export type ReminderId = 'inviteReminder' | 'waShtReminder';
 
@@ -18,6 +19,7 @@ type ReminderJobMap = Record<ReminderId, CronJob>;
 
 class Scheduler {
     private readonly reminderConfigStore = new ReminderConfigStore();
+    private readonly raidReminderGate = new RaidReminderGate();
 
     private readonly defaultReminderConfigs: ReminderConfigMap = {
         inviteReminder: {
@@ -55,7 +57,7 @@ class Scheduler {
             cronTime: cfg.schedule,
             onTick: () => {
                 const currentConfig = this.reminderConfigs[id];
-                void Scheduler.sendRaidReminder(currentConfig.message);
+                void this.sendRaidReminder(currentConfig.message);
             },
             start: false,
             name,
@@ -138,7 +140,7 @@ class Scheduler {
             const raidCancelled = CronJob.from({
                 cronTime: '* * * * * *',
                 onTick: () => {
-                    void Scheduler.sendRaidReminder(`Sadly, raid has been cancelled. See y'all at ${date}`);
+                    void this.sendRaidReminder(`Sadly, raid has been cancelled. See y'all at ${date}`, false);
                 },
                 onComplete: null,
                 start: false,
@@ -171,8 +173,17 @@ class Scheduler {
         this.inviteStaller.runOnce = true;
     }
 
-    private static async sendRaidReminder(message: string): Promise<void> {
+    private async sendRaidReminder(message: string, validateRaidStatus: boolean = true): Promise<void> {
         try {
+            if (validateRaidStatus) {
+                const today = getLocalDateString(new Date());
+                const shouldSend = await this.raidReminderGate.shouldSendReminder(today);
+
+                if (!shouldSend) {
+                    return;
+                }
+            }
+
             const channel = findChannel(config.INVITE_REMINDER_CHANNEL_NAME ?? '', config.SERVER_ID);
             if (!channel) {
                 console.log(`${config.INVITE_REMINDER_CHANNEL_NAME} channel not found!`);
@@ -190,6 +201,14 @@ class Scheduler {
             console.error('Failed to send raid reminder:', error);
         }
     }
+}
+
+function getLocalDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
 }
 
 export default Scheduler;
