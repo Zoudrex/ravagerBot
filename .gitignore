@@ -286,3 +286,8 @@ $RECYCLE.BIN/
 
 src/commands/floodArchive.ts
 .npm-cache/
+
+./data/**
+./data/
+data/
+data/**
