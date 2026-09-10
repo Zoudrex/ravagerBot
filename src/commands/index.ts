@@ -2,7 +2,7 @@ import * as ping from "./ping";
 import * as deploy from "./deployChannels"
 import * as cancelraid from "./cancelRaid"
 import * as nextraid from "./nextRaid"
-import * as handleapplicant from "./applicants/handleApplicant"
+import * as review from "./applicants/review"
 import type { SlashCommand } from "../interactions/types";
 
 const commandList: SlashCommand[] = [
@@ -10,7 +10,7 @@ const commandList: SlashCommand[] = [
     deploy,
     cancelraid,
     nextraid,
-    handleapplicant
+    review
 ];
 
 export const commands: Record<string, SlashCommand> = Object.fromEntries(
