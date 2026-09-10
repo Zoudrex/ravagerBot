@@ -41,3 +41,31 @@ No separate command registration script is required.
 Run `npm test` for offline review tests and `npx tsc --noEmit` to type-check.
 The `build` script also restarts PM2; use the type-check command to validate
 without deploying.
+
+## Admin panel: Channel messages
+
+The admin panel has separate **Raid reminders** and **Channel messages** tabs.
+The latter edits the ticket welcome message and the guild application message
+published by `/deploy`. Choose **Save and update Discord** to persist the text
+and edit the existing bot message in place. Message buttons and existing embed
+suppression are preserved; edits do not send mention notifications. Text supports
+Discord Markdown and must be nonblank and at most 2,000 characters.
+
+Saved content and Discord guild/channel/message IDs live in
+`data/deployed-messages.json`, using the same local file storage pattern as
+reminders. Keep this file with the server's persistent data and backups.
+Future `/deploy` runs use the saved content and record the replacement message IDs.
+No new environment variables or slash-command registrations are needed for this tab.
+Rebuild/restart the bot to load the new API and refresh the browser for the tab.
+
+Existing deployments are discovered automatically on first use by channel/category
+name, bot author and the existing Create ticket / Apply button. Their current text
+is adopted into storage; running `/deploy` again is not needed to begin editing.
+After discovery the stored IDs continue working if a channel is renamed.
+Ambiguous matches are reported instead of editing an arbitrary message.
+
+If Discord rejects an update, the edited text stays saved on the server and the
+panel offers **Retry Discord update**. A missing message/channel requires `/deploy`
+to publish the saved text. Edits from a stale browser session are rejected with a
+reload message. Saves and deployments are serialized within the existing single
+bot process. The new API uses the admin panel's existing access arrangement.

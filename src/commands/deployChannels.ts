@@ -17,6 +17,7 @@ import {
 import {config} from "../config";
 import { BUTTON_IDS, CATEGORY_NAMES, CHANNEL_NAMES, STAFF_ROLES } from "../constants/guild";
 import { findOrCreateCategory } from "../services/findOrCreateCategory";
+import { deployedMessageService } from '../services/DeployedMessageService';
 
 const CATEGORIES_TO_DELETE: readonly string[] = [
     CATEGORY_NAMES.tickets,
@@ -43,75 +44,81 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     await interaction.deferReply({ephemeral: true});
+    const guild = interaction.guild;
 
     try {
-        const destructive = interaction.options.getBoolean('destructive') ?? false;
+        return await deployedMessageService.exclusive(async () => {
+            // Read storage before deleting channels, so invalid saved data fails safely.
+            deployedMessageService.getContent('tickets');
+            deployedMessageService.getContent('apply');
+            const destructive = interaction.options.getBoolean('destructive') ?? false;
 
-        if (destructive) {
-            await deleteManagedCategories(interaction);
-        } else {
-            await deleteManagedDeployChannels(interaction);
-        }
-
-        const applicantRole = interaction.guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
-        const ticketCategory = await findOrCreateCategory(
-            interaction.guild.channels,
-            CATEGORY_NAMES.tickets,
-            applicantRole?.id
-        );
-        const applicantCategory = await findOrCreateCategory(
-            interaction.guild.channels,
-            CATEGORY_NAMES.applicants
-        );
-        const ticketChannelPermissionOverwrites = [{
-            id: interaction.guild.id,
-            deny: PermissionFlagsBits.SendMessages
-        }, {
-            id: interaction.client.user?.id,
-            allow: PermissionFlagsBits.SendMessages
-        }];
-
-        if (applicantRole) {
-            ticketChannelPermissionOverwrites.push({
-                id: applicantRole.id,
-                deny: PermissionFlagsBits.ViewChannel,
-            });
-        }
-
-        const channelGeneral = await interaction.guild.channels.create({
-            name: CHANNEL_NAMES.tickets,
-            type: ChannelType.GuildText,
-            parent: ticketCategory.id,
-            permissionOverwrites: ticketChannelPermissionOverwrites
-        }) as TextChannel;
-
-        if (applicantRole) {
-            await createApplicantChannel(interaction, applicantCategory);
-        }
-
-
-        const createTicketButton = new ButtonBuilder()
-            .setCustomId(BUTTON_IDS.createTicket)
-            .setLabel('Create a ticket 💌')
-            .setStyle(ButtonStyle.Secondary);
-
-        await channelGeneral.send(
-            {
-                content: '🎟️ Got Questions? Need Help? 🎟️ \n' +
-                    '\n' +
-                    'Hey there! 👋 \nIf you have any questions or need assistance, don\'t hesitate to reach out! \n\n',
-                components: [
-                    {
-                        "type": 1,
-                        "components": [
-                            createTicketButton.toJSON()
-                        ]
-                    }
-                ]
+            if (destructive) {
+                await deleteManagedCategories(interaction);
+            } else {
+                await deleteManagedDeployChannels(interaction);
             }
-        );
 
-        return interaction.editReply({content: destructive ? `Ticket channel recreated after destructive cleanup` : `Ticket channel created`});
+            const applicantRole = guild.roles.cache.find(role => role.name === config.APPLICANT_ROLE_NAME);
+            const ticketCategory = await findOrCreateCategory(
+                guild.channels,
+                CATEGORY_NAMES.tickets,
+                applicantRole?.id
+            );
+            const applicantCategory = await findOrCreateCategory(
+                guild.channels,
+                CATEGORY_NAMES.applicants
+            );
+            const ticketChannelPermissionOverwrites = [{
+                id: guild.id,
+                deny: PermissionFlagsBits.SendMessages
+            }, {
+                id: interaction.client.user?.id,
+                allow: PermissionFlagsBits.SendMessages
+            }];
+
+            if (applicantRole) {
+                ticketChannelPermissionOverwrites.push({
+                    id: applicantRole.id,
+                    deny: PermissionFlagsBits.ViewChannel,
+                });
+            }
+
+            const channelGeneral = await guild.channels.create({
+                name: CHANNEL_NAMES.tickets,
+                type: ChannelType.GuildText,
+                parent: ticketCategory.id,
+                permissionOverwrites: ticketChannelPermissionOverwrites
+            }) as TextChannel;
+
+            if (applicantRole) {
+                await createApplicantChannel(interaction, applicantCategory);
+            }
+
+
+            const createTicketButton = new ButtonBuilder()
+                .setCustomId(BUTTON_IDS.createTicket)
+                .setLabel('Create a ticket 💌')
+                .setStyle(ButtonStyle.Secondary);
+
+            const ticketMessage = await channelGeneral.send(
+                {
+                    content: deployedMessageService.getContent('tickets'),
+                    allowedMentions: {parse: []},
+                    components: [
+                        {
+                            "type": 1,
+                            "components": [
+                                createTicketButton.toJSON()
+                            ]
+                        }
+                    ]
+                }
+            );
+
+            deployedMessageService.remember('tickets', ticketMessage);
+            return interaction.editReply({content: destructive ? `Ticket channel recreated after destructive cleanup` : `Ticket channel created`});
+        });
     } catch (error) {
         console.error('Error creating channel:', error);
         return interaction.editReply({
@@ -181,33 +188,8 @@ async function createApplicantChannel(interaction: ChatInputCommandInteraction, 
 
     const msg = await channelApply.send(
         {
-            content: "Welcome to RAVAGE Gaming's Discord. \n" +
-                "\n" +
-                "We are a CE WoW guild based on the Draenor Server\n" +
-                "\n" +
-                "Raid Days: Thursday & Sunday 20:00 - 23:00 Servertime (We raid Monday 20:00 - 23:00ST for the first 4 weeks of the tier) \n" +
-                "\n" +
-                "After CE we aim to keep raid days down to just Thursday 20:00 - 23:00 \n" +
-                "\n" +
-                "**Dragonflight**\n" +
-                "Aberrus: 9/9M - Rank: 904\n" +
-                "Amirdrassil: 9/9M - Rank: 770\n" +
-                "\n" +
-                "**The War Within**\n" +
-                "Nerub-ar Palace: 8/8M - Rank: 596\n" +
-                "Liberation of the Undermined: 8/8M - Rank: 753\n" +
-                "Manaforge Omega: 8/8M - Rank: 591\n" +
-                "\n" +
-                "**Midnight**\n" +
-                "VS/DR/MQD: 9/9M - Rank: 513\n" +
-                "\n" +
-                "You can find us on: \n" +
-                "[Raider.io](https://raider.io/guilds/eu/draenor/RAVAGE)\n" +
-                "[WarcraftLogs](https://www.warcraftlogs.com/guild/id/789457)\n" +
-                "[WoWProgress](https://www.wowprogress.com/guild/eu/draenor/RAVAGE)\n" +
-                "\n" +
-                "If interested in applying to the guild or connecting with our officers please click the apply button below!\n\n\n\n" +
-                " ",
+            content: deployedMessageService.getContent('apply'),
+            allowedMentions: {parse: []},
             components: [
                 {
                     "type": 1,
@@ -218,5 +200,6 @@ async function createApplicantChannel(interaction: ChatInputCommandInteraction, 
             ]
         }
     )
+    deployedMessageService.remember('apply', msg);
     await msg.suppressEmbeds(true);
 }

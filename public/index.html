@@ -2,13 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Raid Reminders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAVAGE Bot Admin</title>
     <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
-<h1>Raid reminder configuration</h1>
-<div id="reminders"></div>
+<h1>RAVAGE bot configuration</h1>
+<div class="tabs" role="tablist" aria-label="Configuration sections">
+    <button id="reminders-tab" class="tab" role="tab" aria-selected="true" aria-controls="reminders-panel">Raid reminders</button>
+    <button id="messages-tab" class="tab" role="tab" aria-selected="false" aria-controls="messages-panel" tabindex="-1">Channel messages</button>
+</div>
+<section id="reminders-panel" role="tabpanel" aria-labelledby="reminders-tab">
+    <h2>Raid reminder configuration</h2>
+    <div id="reminders"></div>
+</section>
+<section id="messages-panel" role="tabpanel" aria-labelledby="messages-tab" hidden>
+    <h2>Channel messages</h2>
+    <p class="section-description">Edit the welcome messages published by /deploy. Saving updates the message in Discord and keeps its buttons. Future deployments use your saved text.</p>
+    <div id="deployed-messages"></div>
+</section>
 
-<script type="module" src="./js/main.js?v=admin-ui-v2"></script>
+<script type="module" src="./js/main.js?v=admin-ui-v3"></script>
 </body>
 </html>

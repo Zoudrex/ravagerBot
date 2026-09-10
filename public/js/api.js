@@ -35,3 +35,22 @@ export async function updateReminder(reminderId, payload) {
         throw new Error(message);
     }
 }
+
+async function deployedMessageRequest(url, options) {
+    const response = await fetch(url, options);
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error || 'Channel message request failed.');
+    return body;
+}
+
+export function fetchDeployedMessages() {
+    return deployedMessageRequest('/api/deployed-messages');
+}
+
+export function updateDeployedMessage(id, content, expectedContent) {
+    return deployedMessageRequest(`/api/deployed-messages/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({content, expectedContent}),
+    });
+}

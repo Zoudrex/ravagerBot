@@ -3,6 +3,10 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import path from 'path';
 import Scheduler, { ReminderConfig } from '../schedulers/scheduler';
+import { getClient } from '../app/context';
+import { config } from '../config';
+import { deployedMessageService } from '../services/DeployedMessageService';
+import { createDeployedMessageRouter } from './deployedMessageApi';
 const publicDir = path.join(process.cwd(), 'public');
 
 const app = express();
@@ -29,6 +33,11 @@ export function startAdminApi(scheduler: Scheduler) {
     }
 
     started = true;
+
+    app.use('/api/deployed-messages', createDeployedMessageRouter(
+        deployedMessageService,
+        () => getClient().guilds.fetch(config.SERVER_ID),
+    ));
 
     app.get('/api/reminders', (_req, res) => {
         const data = scheduler.getReminderConfigs();
