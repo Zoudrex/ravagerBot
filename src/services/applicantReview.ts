@@ -1,4 +1,4 @@
-import { ChannelType, Guild, Message, PermissionFlagsBits, TextChannel } from "discord.js";
+import { ChannelType, Guild, OverwriteType, PermissionFlagsBits, TextChannel } from "discord.js";
 import { config } from "../config";
 import { ROLE_NAMES } from "../constants/guild";
 
@@ -6,7 +6,6 @@ export class ApplicantReviewError extends Error {}
 
 export type ReviewContext = {
     channelId: string;
-    messageId: string;
     applicantId: string;
     officerId: string;
 };
@@ -28,19 +27,19 @@ export async function getReviewChannel(guild: Guild | null, channelId: string, o
     return channel;
 }
 
-export async function findLatestUserMessage(channel: TextChannel): Promise<Message | undefined> {
-    let before: string | undefined;
-    while (true) {
-        const messages = await channel.messages.fetch({limit: 100, before});
-        // Sort explicitly: correctness must not depend on cache insertion order.
-        const sorted = [...messages.values()].sort((a, b) => a.id === b.id ? 0 : BigInt(a.id) > BigInt(b.id) ? -1 : 1);
-        const message = sorted.find(item => !item.author.bot && !item.system);
-        if (message) return message;
-        if (messages.size < 100) return undefined;
-        const oldest = sorted[sorted.length - 1]?.id;
-        if (!oldest || oldest === before) return undefined;
-        before = oldest;
+export function findChannelApplicantId(channel: TextChannel): string {
+    // Application tickets grant ViewChannel directly to their creator. Staff
+    // access uses role overwrites; the bot's own overwrite is never an applicant.
+    const candidates = channel.permissionOverwrites.cache.filter(overwrite =>
+        overwrite.type === OverwriteType.Member && overwrite.id !== channel.client.user.id &&
+        overwrite.allow.has(PermissionFlagsBits.ViewChannel) && !overwrite.deny.has(PermissionFlagsBits.ViewChannel));
+    if (candidates.size === 0) {
+        throw new ApplicantReviewError("No applicant could be identified from this channel's member permissions.");
     }
+    if (candidates.size > 1) {
+        throw new ApplicantReviewError("Multiple members have explicit access to this channel. The applicant cannot be identified safely; check the channel permissions.");
+    }
+    return candidates.first()!.id;
 }
 
 // Discord's Applicant role is the authoritative pending state. Locks cover the
@@ -55,9 +54,8 @@ export async function processApplicantDecision(guild: Guild, context: ReviewCont
     keys.forEach(key => inProgress.add(key));
     try {
         const channel = await getReviewChannel(guild, context.channelId, context.officerId);
-        const message = await channel.messages.fetch({message: context.messageId, force: true});
-        if (message.channelId !== context.channelId || message.author.id !== context.applicantId || message.author.bot || message.system) {
-            throw new ApplicantReviewError("The original message no longer matches this review. Run /review again.");
+        if (findChannelApplicantId(channel) !== context.applicantId) {
+            throw new ApplicantReviewError("The applicant assigned to this channel has changed. Run /review again.");
         }
         const applicant = await guild.members.fetch({user: context.applicantId, force: true});
         await guild.roles.fetch();
@@ -106,7 +104,6 @@ export function reviewErrorMessage(error: unknown): string {
     if (error instanceof ApplicantReviewError) return error.message;
     const code = (error as {code?: number} | null)?.code;
     if (code === 10007) return "The member is no longer in the guild. This review cannot proceed.";
-    if (code === 10008) return "The original message no longer exists. Run /review again.";
     if (code === 10003) return "The applicant channel no longer exists; the applicant may already have been handled.";
     if (code === 50001 || code === 50013) return "The bot is missing Discord access or permissions for this review.";
     return "A Discord API error occurred while reviewing this applicant. Try /review again.";

@@ -12,21 +12,24 @@ If a destructive deployment recreates the category, update the ID and restart.
 
 Enable **Message Content Intent** in the Discord Developer Portal for the bot
 (and obtain approval if Discord requires it). The bot now requests this intent
-to read application messages. It also needs View Channel, Read Message History,
+to read deployed messages for the admin panel. It also needs View Channel, Read Message History,
 Manage Roles, Kick Members and Manage Channels, with its role above the roles
 and members it manages.
 
-The ephemeral preview shows the latest non-bot, non-system message, its author,
-and a link to the original. Its author is the applicant, regardless of the ticket's
-member permission overwrite. A decision requires the author to still have the
-Applicant role. Previewing does not edit the source message. Acceptance removes
+The ephemeral review panel shows the applicant and Accept / Decline buttons.
+The applicant is identified by the channel's explicit member permission granting
+View Channel, which is created when they open an application ticket. No message
+needs to have been posted, and `/review` does not read channel messages. Missing
+or ambiguous member permissions produce an error instead of selecting someone
+arbitrarily. A decision requires the member to still have the Applicant role.
+Acceptance removes
 Applicant, adds Raider, and deletes the channel. Decline removes Applicant, sends
 the existing standard decline DM, kicks the member, and deletes the channel.
 There is no custom decline-reason input. Channel deletion preserves the existing
 workflow's cleanup behavior.
 
-Buttons belong to the Officer who opened the preview. Each click rechecks their
-role, channel, source message and applicant membership. The Applicant role is
+Buttons belong to the Officer who opened the review. Each click rechecks their
+role, channel, applicant assignment and applicant membership. The Applicant role is
 the pending state; removing it prevents stale reviews from repeating decisions,
 including after restarts. In-process locks protect concurrent decisions for the
 same applicant or channel. Run one bot instance, as configured in

@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ChannelType, Collection } from "discord.js";
+import { ChannelType, Collection, OverwriteType, PermissionFlagsBits, PermissionsBitField } from "discord.js";
 
 // Offline tests: no Discord connection or real credentials.
 Object.assign(process.env, {DISCORD_TOKEN: "test", DISCORD_CLIENT_ID: "1", SERVER_ID: "1", APPLICANTS_CATEGORY_ID: "10", APPLICANT_ROLE_NAME: "Applicant", RAIDER_ROLE_NAME: "Raider"});
 const service = require("../src/services/applicantReview") as typeof import("../src/services/applicantReview");
 const command = require("../src/commands/applicants/review") as typeof import("../src/commands/applicants/review");
 const button = require("../src/buttonInteractions/reviewApplicant") as typeof import("../src/buttonInteractions/reviewApplicant");
+
+function memberOverwrite(id: string) {
+    return {id, type: OverwriteType.Member, allow: new PermissionsBitField(PermissionFlagsBits.ViewChannel), deny: new PermissionsBitField()};
+}
 
 function fixture() {
     const calls: string[] = [];
@@ -23,10 +27,11 @@ function fixture() {
         kick: async (reason: string) => { calls.push("kick"); assert.equal(reason, "Application declined"); },
     };
     const officer = {roles: {cache: new Collection([["40", {name: "Officer"}]])}};
-    const source: any = {id: "50", channelId: "60", author: {id: "30", bot: false}, system: false, content: "My application", url: "https://discord.com/channels/1/60/50"};
     const channel: any = {
         id: "60", type: ChannelType.GuildText, parentId: "10",
-        messages: {fetch: async (options: any) => options.message ? source : new Collection([[source.id, source]])},
+        client: {user: {id: "99"}},
+        permissionOverwrites: {cache: new Collection([["30", memberOverwrite("30")]])},
+        messages: {fetch: async () => { assert.fail("Applicant review must not read channel messages"); }},
         permissionsFor: () => ({has: () => true}),
         delete: async (reason: string) => { calls.push("delete"); assert.equal(reason, "Applicant handled"); },
     };
@@ -38,7 +43,7 @@ function fixture() {
         },
         roles: {fetch: async () => {}, cache: new Collection([["20", applicantRole], ["21", raiderRole]])},
     };
-    const context = {channelId: "60", messageId: "50", applicantId: "30", officerId: "40"};
+    const context = {channelId: "60", applicantId: "30", officerId: "40"};
     const edits: any[] = [], replies: any[] = [];
     const interaction: any = {
         guild, channelId: "60", user: {id: "40"},
@@ -47,7 +52,7 @@ function fixture() {
         deferUpdate: async () => {}, editReply: async (options: any) => { edits.push(options); },
         reply: async (options: any) => { replies.push(options); },
     };
-    return {calls, applicant, officer, source, channel, guild, context, interaction, edits, replies, applicantRole, raiderRole};
+    return {calls, applicant, officer, channel, guild, context, interaction, edits, replies, applicantRole, raiderRole};
 }
 
 test("command and button registration, no command arguments, IDs under 100 characters", () => {
@@ -58,36 +63,39 @@ test("command and button registration, no command arguments, IDs under 100 chara
     assert.equal(command.data.toJSON().dm_permission, false);
     assert.equal(buttonInteractions[resolveButtonInteractionId(fixture().interaction.customId)].execute, button.execute);
     const id = "9".repeat(20);
-    assert.ok(button.reviewButtonId({channelId: id, messageId: id, applicantId: id, officerId: id}, true).length <= 100);
+    assert.ok(button.reviewButtonId({channelId: id, applicantId: id, officerId: id}, true).length <= 100);
 });
 
-test("search skips bot/system messages across pages and sorts by snowflake", async () => {
-    const f = fixture(); let page = 0;
-    f.channel.messages.fetch = async (options: any) => {
-        assert.equal(options.limit, 100);
-        if (page++ === 0) return new Collection(Array.from({length: 100}, (_, i) => [String(i + 100), {...f.source, id: String(i + 100), author: {bot: i % 2 === 0}, system: i % 2 !== 0}]));
-        assert.equal(options.before, "100");
-        return new Collection([["40", {...f.source, id: "40"}], ["50", f.source]]);
-    };
-    assert.equal((await service.findLatestUserMessage(f.channel))?.id, "50");
-    assert.equal(page, 2);
+test("applicant identification ignores role overwrites, the bot and members without View Channel", () => {
+    const f = fixture();
+    f.channel.permissionOverwrites.cache.set("40", {...memberOverwrite("40"), type: OverwriteType.Role});
+    f.channel.permissionOverwrites.cache.set("99", memberOverwrite("99"));
+    f.channel.permissionOverwrites.cache.set("31", {...memberOverwrite("31"), allow: new PermissionsBitField()});
+    f.channel.permissionOverwrites.cache.set("32", {...memberOverwrite("32"), deny: new PermissionsBitField(PermissionFlagsBits.ViewChannel)});
+    assert.equal(service.findChannelApplicantId(f.channel), "30");
 });
 
-test("no suitable message produces an ephemeral error", async () => {
-    const f = fixture(); f.source.author.bot = true;
+test("missing applicant channel permissions produce an ephemeral error", async () => {
+    const f = fixture(); f.channel.permissionOverwrites.cache.clear();
     await command.execute(f.interaction);
-    assert.match(f.edits[0], /No suitable/);
+    assert.match(f.edits[0].content, /No applicant could be identified/);
     assert.deepEqual(f.calls, []);
 });
 
-test("preview includes author, full content, link and both buttons without modifying source", async () => {
-    const f = fixture(); f.source.content = "a".repeat(4000);
+test("review shows applicant and both buttons without requiring any messages", async () => {
+    const f = fixture();
     await command.execute(f.interaction);
     const ui = f.edits[0];
-    assert.match(ui.content, /<@30>/);
-    assert.ok(ui.content.includes(f.source.url));
-    assert.equal(ui.embeds[0].toJSON().description, f.source.content);
+    assert.equal(ui.content, "Review applicant <@30>");
+    assert.equal(ui.embeds, undefined);
     assert.deepEqual(ui.components[0].toJSON().components.map((item: any) => item.label), ["Accept", "Decline"]);
+    assert.deepEqual(f.calls, []);
+});
+
+test("multiple explicit member permissions are rejected instead of guessing the applicant", async () => {
+    const f = fixture(); f.channel.permissionOverwrites.cache.set("31", memberOverwrite("31"));
+    await command.execute(f.interaction);
+    assert.match(f.edits[0].content, /Multiple members/);
     assert.deepEqual(f.calls, []);
 });
 
@@ -122,7 +130,7 @@ test("wrong category is rejected despite its name", async () => {
 });
 
 for (const accepted of [true, false]) {
-    test(`${accepted ? "accept" : "decline"} preserves side effects and removes buttons`, async () => {
+    test(`${accepted ? "accept" : "decline"} works without channel messages, preserves side effects and removes buttons`, async () => {
         const f = fixture(); f.interaction.customId = button.reviewButtonId(f.context, accepted);
         await button.execute(f.interaction);
         assert.deepEqual(f.calls, accepted ? ["remove", "add", "delete"] : ["remove", "dm", "kick", "delete"]);
@@ -140,7 +148,7 @@ test("closed DMs do not prevent decline", async () => {
 test("double clicks, two officers and another channel cannot race; stale panels cannot repeat", async () => {
     const f = fixture(); let release!: () => void;
     const gate = new Promise<void>(resolve => {release = resolve;});
-    f.channel.messages.fetch = async () => { await gate; return f.source; };
+    f.guild.channels.fetch = async () => { await gate; return f.channel; };
     const first = service.processApplicantDecision(f.guild, f.context, true);
     for (const context of [f.context, {...f.context, officerId: "41"}, {...f.context, channelId: "61"}, {...f.context, applicantId: "31"}]) {
         await assert.rejects(service.processApplicantDecision(f.guild, context, false), /already being handled/);
@@ -153,9 +161,9 @@ test("double clicks, two officers and another channel cannot race; stale panels 
 const invalidStates: Record<string, (f: ReturnType<typeof fixture>) => void> = {
     "removed Officer role": f => { f.officer.roles.cache.clear(); },
     "moved channel": f => { f.channel.parentId = "99"; },
-    "changed message channel": f => { f.source.channelId = "99"; },
-    "changed author": f => { f.source.author.id = "99"; },
-    "system message": f => { f.source.system = true; },
+    "missing applicant assignment": f => { f.channel.permissionOverwrites.cache.clear(); },
+    "changed applicant assignment": f => { f.channel.permissionOverwrites.cache = new Collection([["31", memberOverwrite("31")]]); },
+    "ambiguous applicant assignment": f => { f.channel.permissionOverwrites.cache.set("31", memberOverwrite("31")); },
     "handled applicant": f => { f.applicant.roles.cache.clear(); },
     "missing Applicant role": f => { f.guild.roles.cache.delete("20"); },
     "missing Raider role": f => { f.guild.roles.cache.delete("21"); },
@@ -178,9 +186,14 @@ test("non-kickable applicant cannot be declined and loses no roles", async () =>
     assert.deepEqual(f.calls, []);
 });
 
-for (const [code, expected] of [[10007, /no longer in the guild/], [10008, /message no longer exists/], [10003, /channel no longer exists/], [50013, /missing Discord/], [50001, /missing Discord/], [500, /Discord API error/]] as const) {
+for (const [code, expected] of [[10007, /no longer in the guild/], [10003, /channel no longer exists/], [50013, /missing Discord/], [50001, /missing Discord/], [500, /Discord API error/]] as const) {
     test(`Discord API error ${code} is shown on the ephemeral panel`, async () => {
-        const f = fixture(); f.channel.messages.fetch = async () => {throw {code};};
+        const f = fixture();
+        const fetchMember = f.guild.members.fetch;
+        f.guild.members.fetch = async (options: any) => {
+            if (options.user === f.context.applicantId) throw {code};
+            return fetchMember(options);
+        };
         await button.execute(f.interaction);
         assert.match(f.edits[0].content, expected);
         assert.deepEqual(f.edits[0].components, []);
@@ -193,6 +206,7 @@ test("another officer, wrong channel, malformed ID or public panel cannot use th
         (f: any) => { f.interaction.user.id = "41"; },
         (f: any) => { f.interaction.channelId = "61"; },
         (f: any) => { f.interaction.customId = "review:bad"; },
+        (f: any) => { f.interaction.customId = "review:a:60:50:30:40"; },
         (f: any) => { f.interaction.message.flags.has = () => false; },
     ]) {
         const f = fixture(); mutate(f); await button.execute(f.interaction);
